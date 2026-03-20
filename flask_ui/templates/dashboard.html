@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="hero" style="background: linear-gradient(135deg, #0F172A 0%, #1E1B4B 100%);">
+  <h2>Bảng điều khiển (Dashboard) Quản trị</h2>
+  <p>Tổng quan chi tiết từ dữ liệu PostgreSQL thực tế, giúp phân tích mức độ hài lòng và kịp thời nắm bắt rủi ro từ trải nghiệm bay.</p>
+</section>
+
+{% if empty %}
+<section class="card" style="text-align: center; padding: 40px;">
+  <span class="material-symbols-rounded" style="font-size: 48px; color: var(--text-muted); margin-bottom: 16px;">search_off</span>
+  <p>Hệ thống chưa ghi nhận dữ liệu đánh giá nào trong cơ sở dữ liệu.</p>
+</section>
+{% else %}
+<section class="kpi-row">
+  <div class="kpi"><span>Tổng số lượng đánh giá</span><strong>{{ metrics.total }}</strong></div>
+  <div class="kpi"><span>Tỷ lệ hành khách hài lòng</span><strong style="color: var(--accent);">{{ '%.1f'|format(metrics.sat_pct) }}%</strong></div>
+  <div class="kpi"><span>Điểm rủi ro (TB)</span><strong>{{ '%.1f'|format(metrics.avg_risk) }}</strong></div>
+  <div class="kpi"><span><span class="material-symbols-rounded" style="font-size: 16px; color: var(--danger)">warning</span> Cảnh báo rủi ro cao</span><strong style="color: var(--danger);">{{ metrics.high_risk }}</strong></div>
+  <div class="kpi"><span>Độ tin cậy của AI (TB)</span><strong>{{ '%.1f'|format(metrics.avg_conf) }}%</strong></div>
+</section>
+
+<section class="grid-2">
+  <article class="card">
+    <h3><span class="material-symbols-rounded">bar_chart</span> Mức độ Hài lòng theo Hạng vé</h3>
+    {{ charts.class_pred|safe }}
+  </article>
+  <article class="card">
+    <h3><span class="material-symbols-rounded">pie_chart</span> Cơ cấu Mức Rủi ro</h3>
+    {{ charts.risk_dist|safe }}
+  </article>
+</section>
+
+<section class="card">
+  <h3><span class="material-symbols-rounded">timeline</span> Xu hướng Đánh giá Thời gian thực</h3>
+  {{ charts.timeline|safe }}
+</section>
+
+<section class="card">
+  <h3><span class="material-symbols-rounded" style="color: var(--danger);">priority_high</span> Danh sách Hành khách Rủi ro cao cần ưu tiên</h3>
+  {% if high_risk_rows %}
+  <div class="table-wrap">
+    <table class="datatable display nowrap" style="width:100%">
+      <thead>
+        <tr>
+          <th>Thời gian báo cáo</th><th>Hành khách</th><th>Hạng vé</th><th>Trạng thái AI</th><th>Điểm rủi ro thực tế</th><th>Độ tin cậy (AI)</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in high_risk_rows %}
+        <tr>
+          <td>{{ row.created_at.strftime('%d-%m-%Y %H:%M') if row.created_at else '' }}</td>
+          <td>{{ row.passenger_name }}</td>
+          <td>{{ row.ticket_class }}</td>
+          <td>
+            <span class="badge {{ 'badge-good' if row.prediction_vi == 'Hai long' else 'badge-bad' }}">
+              {{ 'Hài lòng' if row.prediction_vi == 'Hai long' else 'Không hài lòng' }}
+            </span>
+          </td>
+          <td style="color: var(--danger); font-weight: 600;">{{ '%.1f'|format(row.risk_score) }}</td>
+          <td>{{ '%.1f'|format(row.confidence) }}%</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p style="color: var(--text-muted); text-align: center; padding: 20px;">Dịch vụ ổn định. Không phát hiện hành khách có rủi ro cao.</p>
+  {% endif %}
+</section>
+{% endif %}
+{% endblock %}

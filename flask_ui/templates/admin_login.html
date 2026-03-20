@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="card" style="max-width: 500px; margin: 40px auto; text-align: center;">
+  <span class="material-symbols-rounded" style="font-size: 64px; color: var(--primary); margin-bottom: 24px; display: block;">admin_panel_settings</span>
+  <h2 style="margin-bottom: 32px">Đăng nhập Quản trị Trang (Admin)</h2>
+  
+  <form method="post" style="text-align: left; gap: 20px;">
+    <label>
+      <span class="material-symbols-rounded" style="font-size: 16px;">person</span> Tài khoản (Username)
+      <input type="text" name="username" placeholder="Nhập tài khoản" required style="padding-left: 20px" />
+    </label>
+    
+    <label>
+      <span class="material-symbols-rounded" style="font-size: 16px;">lock</span> Mật khẩu (Password)
+      <input type="password" name="password" placeholder="••••••••" required style="padding-left: 20px" />
+    </label>
+    
+    <button class="btn" type="submit" style="width: 100%; justify-content: center; padding: 14px; font-size: 16px; margin-top: 10px;">
+      Đăng nhập <span class="material-symbols-rounded">login</span>
+    </button>
+  </form>
+</section>
+{% endblock %}

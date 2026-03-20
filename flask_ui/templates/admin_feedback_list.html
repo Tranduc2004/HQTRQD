@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="hero" style="background: linear-gradient(135deg, #1D4ED8 0%, #312E81 100%);">
+  <h2>Danh sách Đánh giá của Khách hàng</h2>
+  <p>Xem toàn bộ phản hồi từ khách hàng, kết quả dự đoán từ AI và mức độ rủi ro tương ứng.</p>
+</section>
+
+<div class="card" style="margin-top: -30px; position: relative; z-index: 10;">
+  {% if feedback_list %}
+  <table class="datatable display" style="width:100%">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Ngày gửi</th>
+        <th>Hành khách</th>
+        <th>Hạng vé</th>
+        <th>Dự đoán AI</th>
+        <th>Độ tin cậy</th>
+        <th>Rủi ro</th>
+        <th style="text-align: center;">Thao tác</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in feedback_list %}
+      <tr>
+        <td>#{{ item['id'] }}</td>
+        <td>{{ item['created_at'].strftime('%d/%m/%Y %H:%M') }}</td>
+        <td><strong>{{ item['passenger_name'] }}</strong></td>
+        <td>
+          <span class="badge" style="background: rgba(79, 70, 229, 0.1); color: var(--primary);">{{ item['ticket_class'] }}</span>
+        </td>
+        <td>
+          {% if item['prediction'] == 'Satisfied' %}
+            <span style="color: #059669; font-weight: 600;"><span class="material-symbols-rounded" style="vertical-align: middle; font-size: 18px;">check_circle</span> {{ item['prediction_vi'] }}</span>
+          {% else %}
+            <span style="color: #dc2626; font-weight: 600;"><span class="material-symbols-rounded" style="vertical-align: middle; font-size: 18px;">error</span> {{ item['prediction_vi'] }}</span>
+          {% endif %}
+        </td>
+        <td>{{ item['confidence']|round(1) }}%</td>
+        <td>
+          {% set r_color = '#cf4d4d' if item['risk_level'] == 'HIGH' else ('#e18f2a' if item['risk_level'] == 'MEDIUM' else '#29a36a') %}
+          <span class="badge" style="background: {{ r_color }}; color: white; min-width: 80px; text-align: center;">{{ item['risk_level_vi'] }}</span>
+        </td>
+        <td style="text-align: center;">
+          <a href="{{ url_for('admin_feedback_detail', feedback_id=item['id']) }}" class="btn btn-outline" style="padding: 6px 14px; font-size: 13px; border-radius: 20px;">
+            <span class="material-symbols-rounded" style="font-size: 18px;">visibility</span> Xem chi tiết AHP
+          </a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div style="text-align: center; padding: 40px;">
+    <span class="material-symbols-rounded" style="font-size: 64px; color: var(--text-muted);">folder_open</span>
+    <p style="color: var(--text-muted); margin-top: 16px;">Chưa có dữ liệu đánh giá nào được ghi nhận.</p>
+  </div>
+  {% endif %}
+</div>
+
+<style>
+.badge {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-block;
+}
+</style>
+{% endblock %}

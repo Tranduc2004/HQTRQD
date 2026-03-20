@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+/* Dynamic Home Animations & Styles */
+.hero-dynamic {
+  position: relative;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  color: white;
+  padding: 80px 40px;
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+  margin-bottom: 40px;
+  background: url('https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=1200&auto=format&fit=crop') no-repeat center center/cover;
+}
+.hero-dynamic::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(135deg, rgba(30, 58, 138, 0.85) 0%, rgba(49, 46, 129, 0.95) 100%);
+  z-index: 1;
+}
+.hero-content {
+  position: relative;
+  z-index: 2;
+  animation: fadeInUp 0.8s ease-out forwards;
+}
+.hero-content h2 {
+  color: white;
+  font-size: 36px;
+  margin-bottom: 16px;
+  text-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+.hero-content p {
+  font-size: 18px;
+  max-width: 600px;
+  margin: 0 auto 30px auto;
+  opacity: 0.9;
+  line-height: 1.6;
+}
+
+.btn-pulse {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(135deg, #10B981, #059669);
+  color: white;
+  padding: 14px 28px;
+  border-radius: 50px;
+  font-weight: 600;
+  font-size: 18px;
+  text-decoration: none;
+  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  animation: pulse 2s infinite;
+  transition: transform 0.3s;
+}
+.btn-pulse:hover {
+  transform: translateY(-3px);
+  color: white;
+}
+
+/* Floating animation for cards */
+.animate-float {
+  opacity: 0;
+  transform: translateY(30px);
+  animation: floatUp 0.6s ease-out forwards;
+}
+.grid-3 article:nth-child(1) { animation-delay: 0.2s; }
+.grid-3 article:nth-child(2) { animation-delay: 0.4s; }
+.grid-3 article:nth-child(3) { animation-delay: 0.6s; }
+
+.grid-3 article:hover {
+  transform: translateY(-8px);
+  box-shadow: var(--shadow-lg);
+  border-color: rgba(79, 70, 229, 0.3);
+}
+.grid-3 h3 {
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 15px;
+}
+.grid-3 h3 span {
+  background: rgba(79, 70, 229, 0.1);
+  padding: 8px;
+  border-radius: 50%;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes floatUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 15px rgba(16, 185, 129, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+.kpi-row .kpi:hover {
+  transform: scale(1.05);
+  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+</style>
+
+<section class="hero-dynamic">
+  <div class="hero-content">
+    <h2>Trải nghiệm Bay Đẳng cấp & Lắng nghe thấu hiểu</h2>
+    <p>Chúng tôi thu thập phản hồi của bạn qua 6 tiêu chí cốt lõi, sử dụng AI thông minh (XGBoost) kết hợp chuyên gia (AHP) để không ngừng nâng cao chất lượng dịch vụ vì bạn.</p>
+    <a href="{{ url_for('survey') }}" class="btn-pulse">
+      <span class="material-symbols-rounded">flight_takeoff</span>
+      Bắt đầu Đánh giá ngay
+    </a>
+  </div>
+</section>
+
+<section class="grid-3" style="margin-bottom: 40px;">
+  <article class="card animate-float" style="border: 2px solid transparent; transition: all 0.3s; cursor: pointer;">
+    <h3><span class="material-symbols-rounded">auto_awesome</span> Khảo sát thông minh</h3>
+    <p>Thu thập đánh giá các tiêu chí dịch vụ và được xử lý siêu tốc bằng Mô hình học máy (XGBoost) cùng trọng số chuyên gia (AHP).</p>
+  </article>
+  <article class="card animate-float" style="border: 2px solid transparent; transition: all 0.3s; cursor: pointer;">
+    <h3><span class="material-symbols-rounded">database</span> Quản trị theo dữ liệu</h3>
+    <p>Tất cả phản hồi được mã hóa an toàn vào máy chủ PostgreSQL, tổng hợp thành báo cáo trực quan cho Quản trị viên theo thời gian thực.</p>
+  </article>
+  <article class="card animate-float" style="border: 2px solid transparent; transition: all 0.3s; cursor: pointer;">
+    <h3><span class="material-symbols-rounded">warning</span> Cảnh báo rủi ro</h3>
+    <p>Hệ thống dự báo xếp loại nguy cơ và tự động gợi ý hành động ưu tiên khẩn cấp cho bộ phận vận hành để trực tiếp cải thiện ngay chuyến bay.</p>
+  </article>
+</section>
+
+<section class="kpi-row" style="margin-bottom: 40px;">
+  <div class="kpi" style="cursor: default;">
+    <span>Trạng thái DSS (Hệ thống)</span>
+    <strong style="color: {% if stats.dss_ready %}var(--accent){% else %}var(--danger){% endif %}">
+      {{ 'Sẵn sàng hoạt động' if stats.dss_ready else 'Chưa khả dụng' }}
+    </strong>
+  </div>
+  <div class="kpi" style="cursor: default;">
+    <span>Trọng số Chuyên gia (AHP)</span>
+    <strong style="color: {% if stats.ahp_ready %}var(--accent){% else %}var(--danger){% endif %}">
+      {{ 'Đã tích hợp' if stats.ahp_ready else 'Thiếu' }}
+    </strong>
+  </div>
+  <div class="kpi" style="cursor: default;">
+    <span>Mô hình thông minh (Model)</span>
+    <strong style="color: var(--primary);">{{ stats.model_ready }}/3 Ready</strong>
+  </div>
+  <div class="kpi" style="cursor: default;">
+    <span>Tổng số đánh giá</span>
+    <strong style="color: #8b5cf6;">{{ stats.total }} lượt</strong>
+  </div>
+</section>
+
+<section class="card" style="animation: fadeInUp 1s ease-out forwards; opacity: 0;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <h3 style="margin-bottom: 0; display: flex; align-items: center; gap: 8px;">
+      <span class="material-symbols-rounded" style="color: var(--primary);">history</span> Lịch sử Đánh giá mới nhất
+    </h3>
+    <a href="{{ url_for('survey') }}" style="font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 4px;">Xem tất cả <span class="material-symbols-rounded" style="font-size:18px;">arrow_forward</span></a>
+  </div>
+  
+  {% if latest %}
+  <div class="table-wrap">
+    <table class="datatable display nowrap style-table" style="width:100%">
+      <thead>
+        <tr style="background: rgba(79, 70, 229, 0.05);">
+          <th style="padding: 12px; border-bottom: 2px solid var(--border-color); text-align: left; color: var(--secondary);">Thời gian</th>
+          <th style="padding: 12px; border-bottom: 2px solid var(--border-color); text-align: left; color: var(--secondary);">Hành khách</th>
+          <th style="padding: 12px; border-bottom: 2px solid var(--border-color); text-align: left; color: var(--secondary);">Hạng vé</th>
+          <th style="padding: 12px; border-bottom: 2px solid var(--border-color); text-align: left; color: var(--secondary);">Dự đoán AI</th>
+          <th style="padding: 12px; border-bottom: 2px solid var(--border-color); text-align: left; color: var(--secondary);">Mức Rủi ro</th>
+          <th style="padding: 12px; border-bottom: 2px solid var(--border-color); text-align: right; color: var(--secondary);">Risk Score</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in latest %}
+        <tr style="transition: background 0.2s; border-bottom: 1px solid var(--border-color);">
+          <td style="padding: 12px;">{{ row.created_at.strftime('%d-%m-%Y %H:%M') if row.created_at else '' }}</td>
+          <td style="padding: 12px; font-weight: 500;">{{ row.passenger_name }}</td>
+          <td style="padding: 12px;">{{ row.ticket_class }}</td>
+          <td style="padding: 12px;">
+            <span style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 50px; font-size: 12px; font-weight: 600; background: {% if row.prediction == 'Satisfied' %}rgba(16, 185, 129, 0.1); color: #047857;{% else %}rgba(239, 68, 68, 0.1); color: #b91c1c;{% endif %}">
+              <span class="material-symbols-rounded" style="font-size: 14px;">{% if row.prediction == 'Satisfied' %}thumb_up{% else %}thumb_down{% endif %}</span>
+              {{ 'Hài lòng' if row.prediction == 'Satisfied' else 'Không hài lòng' }}
+            </span>
+          </td>
+          <td style="padding: 12px;">
+            <span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 700; color: white; background: {% if row.risk_level == 'HIGH' %}var(--danger){% elif row.risk_level == 'MEDIUM' %}#f59e0b{% else %}var(--accent){% endif %}">
+              {{ 'CAO' if row.risk_level == 'HIGH' else 'TRUNG BÌNH' if row.risk_level == 'MEDIUM' else 'THẤP' }}
+            </span>
+          </td>
+          <td style="padding: 12px; text-align: right; font-weight: 600;">{{ '%.1f'|format(row.risk_score) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="text-align: center; padding: 40px 20px; color: var(--text-muted); display: flex; flex-direction: column; align-items: center; gap: 10px;">
+    <span class="material-symbols-rounded" style="font-size: 48px; opacity: 0.5;">hourglass_empty</span>
+    <p>Chưa có dữ liệu đánh giá nào được ghi nhận trên hệ thống.<br>Hãy là người đầu tiên trải nghiệm đánh giá chuyến bay!</p>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

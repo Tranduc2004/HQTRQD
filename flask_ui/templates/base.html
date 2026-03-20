@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{ title or 'Airline Feedback DSS' }}</title>
+  
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+
+  <!-- DataTables CSS -->
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}?v=3.5.2" />
+</head>
+<body>
+  <div class="noise-bg"></div>
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">
+        <span class="material-symbols-rounded">flight_takeoff</span>
+      </div>
+      <div>
+        <h1>Airline DSS</h1>
+        <p>Passenger Feedback</p>
+      </div>
+    </div>
+
+    <nav class="menu">
+      <a href="{{ url_for('home') }}" class="{% if request.path == '/' %}active{% endif %}">
+        <span class="material-symbols-rounded">home</span>
+        Trang chủ
+      </a>
+      <a href="{{ url_for('survey') }}" class="{% if request.path == '/survey' %}active{% endif %}">
+        <span class="material-symbols-rounded">assignment</span>
+        Đánh giá chuyến bay
+      </a>
+      <a href="{{ url_for('calculation_steps') }}" class="{% if request.path == '/calculation-steps' %}active{% endif %}">
+        <span class="material-symbols-rounded">function</span>
+        Các bước tính hài lòng
+      </a>
+      <a href="{{ url_for('admin_dashboard') }}" class="{% if request.path == '/admin/dashboard' %}active{% endif %}">
+        <span class="material-symbols-rounded">dashboard</span>
+        Dashboard Quản trị
+      </a>
+      {% if session.get('admin_authenticated') %}
+      <a href="{{ url_for('admin_feedback_list') }}" class="{% if request.path == '/admin/feedback' %}active{% endif %}">
+        <span class="material-symbols-rounded">list_alt</span>
+        Danh sách Đánh giá
+      </a>
+      <a href="{{ url_for('admin_model_stats') }}" class="{% if request.path == '/admin/model_stats' %}active{% endif %}">
+        <span class="material-symbols-rounded">analytics</span>
+        Thống kê Model (AI)
+      </a>
+      <a href="{{ url_for('admin_decision_support') }}" class="{% if request.path == '/admin/decision-support' %}active{% endif %}">
+        <span class="material-symbols-rounded">psychology</span>
+        Decision Support Strategy
+      </a>
+      {% endif %}
+      <a href="{{ url_for('about') }}" class="{% if request.path == '/about' %}active{% endif %}">
+        <span class="material-symbols-rounded">info</span>
+        Giới thiệu
+      </a>
+    </nav>
+
+    <div class="admin-card">
+      {% if session.get('admin_authenticated') %}
+      <p>Đã đăng nhập:<br><strong>{{ session.get('admin_user') }}</strong></p>
+      <a class="btn btn-muted" style="width: 100%; justify-content: center;" href="{{ url_for('admin_logout') }}">
+        <span class="material-symbols-rounded">logout</span> Đăng xuất
+      </a>
+      {% else %}
+      <p>Khu vực nội bộ.</p>
+      <a class="btn btn-muted" style="width: 100%; justify-content: center;" href="{{ url_for('admin_login') }}">
+        <span class="material-symbols-rounded">login</span> Đăng nhập Admin
+      </a>
+      {% endif %}
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="content-wrapper">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-wrap">
+            {% for category, message in messages %}
+              <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+
+  <!-- jQuery & DataTables JS -->
+  <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+  
+  <script>
+    $(document).ready(function() {
+      $('.datatable').DataTable({
+        language: {
+          url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/vi.json'
+        },
+        pageLength: 5,
+        lengthMenu: [5, 10, 25, 50]
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+# Requirements for Stage 6 - Web Application
+# Install with: pip install -r requirements.txt
+
+# Core dependencies from previous stages
+numpy>=1.24.0
+pandas>=1.5.0
+scikit-learn>=1.2.0
+xgboost>=1.7.0
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# Stage 6 - Web Application
+streamlit>=1.28.0
+plotly>=5.18.0
+psycopg2-binary>=2.9.9
+Flask>=3.0.0
+
+# Additional utilities
+python-dateutil>=2.8.0

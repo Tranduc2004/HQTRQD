@@ -1,0 +1,626 @@
+{% extends 'base.html' %}
+{% block content %}
+<style>
+  .calc-hero {
+    background: linear-gradient(135deg, #0f766e 0%, #164e63 100%);
+    position: relative;
+  }
+
+  .calc-hero::after {
+    content: "";
+    position: absolute;
+    width: 360px;
+    height: 360px;
+    right: -120px;
+    top: -180px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 70%);
+  }
+
+  .calc-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .calc-mini-card {
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    background: #f8fafc;
+  }
+
+  .calc-mini-card p {
+    margin-top: 8px;
+    color: var(--text-secondary);
+    font-size: 14px;
+    line-height: 1.55;
+  }
+
+  .calc-split {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: 18px;
+  }
+
+  .calc-table-wrap {
+    overflow: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+  }
+
+  .calc-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    min-width: 760px;
+    font-size: 14px;
+  }
+
+  .calc-table th,
+  .calc-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-color);
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .calc-table th {
+    background: #eff6ff;
+    color: #1e3a8a;
+    font-weight: 700;
+    position: sticky;
+    top: 0;
+    z-index: 3;
+  }
+
+  .calc-table td:first-child,
+  .calc-table th:first-child {
+    text-align: left;
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: #f8fafc;
+    font-weight: 600;
+  }
+
+  .calc-table th:first-child {
+    z-index: 4;
+    background: #dbeafe;
+  }
+
+  .diag-cell {
+    background: #dcfce7;
+    color: #166534;
+    font-weight: 700;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+
+  .tab-btn {
+    border: 1px solid #cbd5e1;
+    background: #f8fafc;
+    color: #334155;
+    padding: 10px 14px;
+    border-radius: 999px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .tab-btn.active {
+    background: linear-gradient(135deg, #1d4ed8, #2563eb);
+    color: white;
+    border-color: #1d4ed8;
+  }
+
+  .tab-panel {
+    display: none;
+    animation: fade-in 0.2s ease;
+  }
+
+  .tab-panel.active {
+    display: block;
+  }
+
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(120px, 1fr));
+    gap: 10px;
+    margin-top: 14px;
+  }
+
+  .metric {
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 12px;
+    background: #f8fafc;
+  }
+
+  .metric span {
+    display: block;
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+
+  .metric strong {
+    font-size: 18px;
+    color: var(--secondary);
+  }
+
+  .badge-consistent {
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 10px;
+  }
+
+  .badge-ok {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  .badge-bad {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+
+  .weight-bar {
+    height: 8px;
+    border-radius: 999px;
+    background: #e2e8f0;
+    overflow: hidden;
+    margin-top: 4px;
+  }
+
+  .weight-bar > div {
+    height: 100%;
+    background: linear-gradient(90deg, #10b981 0%, #0ea5e9 100%);
+  }
+
+  .formula-grid {
+    display: grid;
+    gap: 12px;
+  }
+
+  .formula-item {
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 12px 14px;
+    background: #f8fafc;
+  }
+
+  .formula-item code {
+    display: block;
+    margin-top: 6px;
+    font-size: 13px;
+    color: #0f172a;
+    background: #e2e8f0;
+    border-radius: 8px;
+    padding: 8px;
+  }
+
+  .decision-two {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .decision-table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+  }
+
+  .decision-table {
+    width: 100%;
+    min-width: 0;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+
+  .decision-table th,
+  .decision-table td {
+    position: static !important;
+    white-space: normal;
+    text-align: left;
+    border: 1px solid var(--border-color);
+    padding: 10px 12px;
+    background: #fff;
+    color: var(--text-secondary);
+    vertical-align: top;
+  }
+
+  .decision-table th {
+    background: #eff6ff;
+    color: #1e3a8a;
+    font-weight: 700;
+  }
+
+  .decision-table th:first-child,
+  .decision-table td:first-child {
+    width: 56px;
+    text-align: center;
+    background: #f8fafc;
+    font-weight: 700;
+  }
+
+  @media (max-width: 1100px) {
+    .calc-grid,
+    .calc-split {
+      grid-template-columns: 1fr;
+    }
+
+    .decision-two {
+      grid-template-columns: 1fr;
+    }
+
+    .metrics {
+      grid-template-columns: repeat(2, minmax(120px, 1fr));
+    }
+  }
+
+  @media (max-width: 640px) {
+    .metrics {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<section class="hero calc-hero">
+  <h2>Thiết kế lại quy trình tính mức hài lòng</h2>
+  <p>Trình bày theo dạng nghiên cứu dễ đọc: có ma trận AHP, tab theo hạng vé, chỉ số CR/CI/lambda_max và bảng trọng số trực quan để theo dõi nhanh.</p>
+</section>
+
+<section class="card" style="margin-top: 24px;">
+  <h3><span class="material-symbols-rounded">hub</span> Cấu trúc mô hình nghiên cứu</h3>
+  <div class="calc-grid" style="margin-top: 12px;">
+    <article class="calc-mini-card">
+      <strong>Goal</strong>
+      <p>Đánh giá mức độ hài lòng khách hàng hàng không theo từng hạng vé.</p>
+    </article>
+    <article class="calc-mini-card">
+      <strong>Criteria Layer</strong>
+      <p>6 tiêu chí dịch vụ đặc thù cho mỗi hạng vé: Business, Economy, Eco Plus.</p>
+    </article>
+    <article class="calc-mini-card">
+      <strong>Alternatives</strong>
+      <p>Hai trạng thái đầu ra: Satisfied và Dissatisfied.</p>
+    </article>
+    <article class="calc-mini-card">
+      <strong>Hybrid Decision</strong>
+      <p>Kết hợp trọng số AHP (chuyên gia) và feature importance từ XGBoost.</p>
+    </article>
+  </div>
+</section>
+
+<section class="card" style="margin-top: 24px;">
+  <h3><span class="material-symbols-rounded">route</span> Luồng xử lý từ biểu mẫu đến kết quả</h3>
+  <div class="calc-grid" style="margin-top: 14px;">
+    <article class="calc-mini-card"><strong>Bước 1.</strong><p>Thu thập dữ liệu khảo sát và thông tin hành khách.</p></article>
+    <article class="calc-mini-card"><strong>Bước 2.</strong><p>Chuẩn hóa biến đầu vào theo đúng hạng vé.</p></article>
+    <article class="calc-mini-card"><strong>Bước 3.</strong><p>Dự đoán nhãn và xác suất bằng XGBoost.</p></article>
+    <article class="calc-mini-card"><strong>Bước 4.</strong><p>Kết hợp AHP với feature importance theo tỷ lệ 50/50.</p></article>
+    <article class="calc-mini-card"><strong>Bước 5.</strong><p>Xác định tiêu chí yếu có ưu tiên cải thiện cao.</p></article>
+    <article class="calc-mini-card"><strong>Bước 6.</strong><p>Tính risk score và phân loại mức rủi ro.</p></article>
+  </div>
+</section>
+
+<section class="card" style="margin-top: 24px;">
+  <h3><span class="material-symbols-rounded">fact_check</span> Bước ra quyết định phương án xử lý</h3>
+  <div class="calc-grid" style="margin-top: 12px;">
+    <article class="calc-mini-card">
+      <strong>Quy tắc phân loại</strong>
+      <p><strong>score >= 0.7</strong> -> <strong>satisfied</strong><br/><strong>score &lt; 0.7</strong> -> <strong>unsatisfied</strong></p>
+      <p>Điểm score được lấy từ xác suất hài lòng của model sau khi xử lý phản hồi khách hàng.</p>
+    </article>
+    <article class="calc-mini-card">
+      <strong>Ưu tiên theo AHP Impact</strong>
+      <p>Sau khi có impact_analysis, hệ thống lấy các tiêu chí điểm thấp nhưng tác động cao để đẩy các phương án liên quan lên trước.</p>
+      <p>Kết quả hiển thị kèm <strong>Lý do đề xuất</strong> để hỗ trợ ra quyết định vận hành.</p>
+    </article>
+  </div>
+
+  <div class="decision-two" style="margin-top: 16px;">
+    <div>
+      <h4>Phương án khi khách hàng <span style="color:#166534;">satisfied</span></h4>
+      <div class="decision-table-wrap" style="margin-top: 8px;">
+        <table class="decision-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Phương án</th>
+              <th>Mô tả</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for plan in satisfied_plans %}
+            <tr>
+              <td>{{ loop.index }}</td>
+              <td>{{ plan.title }}</td>
+              <td>{{ plan.description }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div>
+      <h4>Phương án khi khách hàng <span style="color:#991b1b;">unsatisfied</span></h4>
+      <div class="decision-table-wrap" style="margin-top: 8px;">
+        <table class="decision-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Phương án</th>
+              <th>Mô tả</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for plan in unsatisfied_plans %}
+            <tr>
+              <td>{{ loop.index }}</td>
+              <td>{{ plan.title }}</td>
+              <td>{{ plan.description }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="card" style="margin-top: 24px;">
+  <h3><span class="material-symbols-rounded">tune</span> Thang đo Saaty và chỉ số RI</h3>
+
+  <div class="calc-split" style="margin-top: 14px;">
+    <div>
+      <h4>Bảng thang đo so sánh cặp (Saaty Scale)</h4>
+      <div class="calc-table-wrap" style="margin-top: 8px;">
+        <table class="calc-table" style="min-width: 680px;">
+          <thead>
+            <tr>
+              <th>Giá trị</th>
+              <th>Mức độ</th>
+              <th>Diễn giải</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in saaty_scale %}
+            <tr>
+              <td><strong>{{ row.value }}</strong></td>
+              <td>{{ row.meaning }}</td>
+              <td>{{ row.desc }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div>
+      <h4>Random Index (RI)</h4>
+      <div class="calc-table-wrap" style="margin-top: 8px;">
+        <table class="calc-table" style="min-width: 280px;">
+          <thead>
+            <tr>
+              <th>n</th>
+              <th>RI</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in ri_rows %}
+            <tr>
+              <td>{{ row.n }}</td>
+              <td>{{ '%.2f'|format(row.ri) }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="card" style="margin-top: 24px;">
+  <h3><span class="material-symbols-rounded">view_week</span> Ma trận và trọng số theo từng hạng vé</h3>
+  <div class="tabs">
+    {% for block in class_analysis %}
+    <button type="button" class="tab-btn {% if loop.first %}active{% endif %}" data-tab="class-{{ loop.index0 }}">
+      {{ block.name }}
+    </button>
+    {% endfor %}
+  </div>
+
+  {% for block in class_analysis %}
+  <div class="tab-panel {% if loop.first %}active{% endif %}" id="class-{{ loop.index0 }}">
+    <p style="color: var(--text-secondary); margin-bottom: 10px;">
+      Ma trận đối xứng nghịch đảo theo quy tắc a(j,i) = 1 / a(i,j). Đường chéo chính có giá trị 1 được tô nổi bật để dễ kiểm tra.
+    </p>
+
+    <div class="calc-table-wrap">
+      <table class="calc-table" style="min-width: 1100px;">
+        <thead>
+          <tr>
+            <th>Tiêu chí</th>
+            {% for criterion in block.criteria %}
+            <th>{{ criterion }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in block.matrix %}
+          {% set row_idx = loop.index0 %}
+          <tr>
+            <td>{{ block.criteria[row_idx] }}</td>
+            {% for value in row %}
+            {% if row_idx == loop.index0 %}
+            <td class="diag-cell">{{ '%.3f'|format(value) }}</td>
+            {% else %}
+            <td>{{ '%.3f'|format(value) }}</td>
+            {% endif %}
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="metrics">
+      <article class="metric">
+        <span>Lambda Max</span>
+        <strong>{{ '%.4f'|format(block.consistency.lambda_max) }}</strong>
+      </article>
+      <article class="metric">
+        <span>Consistency Index</span>
+        <strong>{{ '%.4f'|format(block.consistency.ci) }}</strong>
+      </article>
+      <article class="metric">
+        <span>Consistency Ratio</span>
+        <strong>{{ '%.4f'|format(block.consistency.cr) }}</strong>
+      </article>
+      <article class="metric">
+        <span>Top Priority</span>
+        <strong>{{ block.top_priorities[0].criterion_vi }}</strong>
+      </article>
+    </div>
+
+    {% if block.consistency.is_consistent %}
+    <div class="badge-consistent badge-ok">
+      <span class="material-symbols-rounded" style="font-size:16px;">check_circle</span>
+      Đạt yêu cầu nhất quán (CR < 0.1)
+    </div>
+    {% else %}
+    <div class="badge-consistent badge-bad">
+      <span class="material-symbols-rounded" style="font-size:16px;">error</span>
+      Không đạt yêu cầu nhất quán (CR >= 0.1)
+    </div>
+    {% endif %}
+
+    <h4 style="margin-top: 18px;">Priority Weights</h4>
+    <div class="calc-table-wrap" style="margin-top: 8px;">
+      <table class="calc-table" style="min-width: 860px;">
+        <thead>
+          <tr>
+            <th>Tiêu chí</th>
+            <th>Tên tiếng Việt</th>
+            <th>Weight</th>
+            <th>Weight (%)</th>
+            <th>Mức đóng góp</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in block.weights %}
+          <tr>
+            <td>{{ row.criterion }}</td>
+            <td>{{ row.criterion_vi }}</td>
+            <td>{{ '%.6f'|format(row.weight) }}</td>
+            <td>{{ '%.3f'|format(row.weight_pct) }}</td>
+            <td style="min-width: 180px;">
+              <div class="weight-bar"><div data-width="{{ '%.2f'|format(row.weight_pct) }}"></div></div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endfor %}
+</section>
+
+<section class="card" style="margin-top: 24px;">
+  <h3><span class="material-symbols-rounded">calculate</span> Công thức đang dùng trong hệ thống</h3>
+  <div class="formula-grid" style="margin-top: 12px;">
+    <div class="formula-item">
+      <strong>1) Trọng số tổng hợp</strong>
+      <code>combined_weight = 0.5 * xgb_importance + 0.5 * ahp_weight</code>
+    </div>
+    <div class="formula-item">
+      <strong>2) Kiểm định nhất quán AHP</strong>
+      <code>CI = (lambda_max - n) / (n - 1)</code>
+      <code>CR = CI / RI</code>
+    </div>
+    <div class="formula-item">
+      <strong>3) Điểm tác động</strong>
+      <code>impact_score = combined_weight * current_value</code>
+      <code>impact_percent = impact_score / sum(all_impact_scores) * 100</code>
+    </div>
+    <div class="formula-item">
+      <strong>4) Điểm rủi ro</strong>
+      <code>risk_score = prob_dissatisfied * 0.7 + weak_feature_ratio_percent * 0.3</code>
+    </div>
+  </div>
+</section>
+
+<section class="card" style="margin-top: 24px;">
+  <h3><span class="material-symbols-rounded">assignment_turned_in</span> Checklist nội dung báo cáo</h3>
+  <div class="calc-grid" style="margin-top: 12px;">
+    <article class="calc-mini-card"><strong>Pairwise Matrices</strong><p>Ma trận 6x6 cho từng hạng vé và logic chuyên gia.</p></article>
+    <article class="calc-mini-card"><strong>Consistency</strong><p>Trình bày lambda_max, CI, CR và kết luận CR < 0.1.</p></article>
+    <article class="calc-mini-card"><strong>Priority Weights</strong><p>Bảng trọng số và top ưu tiên theo từng hạng vé.</p></article>
+    <article class="calc-mini-card"><strong>Hybrid DSS</strong><p>Cách tích hợp AHP với XGBoost và risk score vận hành.</p></article>
+  </div>
+
+  <div style="margin-top: 18px; display: flex; gap: 12px; flex-wrap: wrap;">
+    <a class="btn" href="{{ url_for('survey') }}">
+      <span class="material-symbols-rounded">assignment</span>
+      Thử tính ngay từ biểu mẫu
+    </a>
+    <a class="btn btn-outline" href="{{ url_for('about') }}">
+      <span class="material-symbols-rounded">info</span>
+      Xem thêm về hệ thống
+    </a>
+  </div>
+</section>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    const tabPanels = document.querySelectorAll('.tab-panel');
+    const weightBars = document.querySelectorAll('.weight-bar > div[data-width]');
+
+    function setActiveTab(targetId) {
+      tabButtons.forEach((btn) => {
+        btn.classList.toggle('active', btn.getAttribute('data-tab') === targetId);
+      });
+
+      tabPanels.forEach((panel) => {
+        panel.classList.toggle('active', panel.id === targetId);
+      });
+    }
+
+    tabButtons.forEach((btn) => {
+      btn.addEventListener('click', function () {
+        const targetId = this.getAttribute('data-tab');
+        setActiveTab(targetId);
+      });
+    });
+
+    weightBars.forEach((bar) => {
+      const width = Number(bar.getAttribute('data-width'));
+      if (!Number.isNaN(width)) {
+        bar.style.width = `${Math.max(0, Math.min(100, width))}%`;
+      }
+    });
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,1170 @@
+{% extends 'base.html' %}
+{% block content %}
+{% set n = ahp_data.criteria_names|length %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+
+<style>
+  .ahp-page {
+    --bg-main: #0a0e1a;
+    --bg-card: #111827;
+    --border-soft: rgba(255, 255, 255, 0.08);
+    --text-main: #e5e7eb;
+    --text-muted: #9ca3af;
+    --accent-grad: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    --sat: #10b981;
+    --unsat: #ef4444;
+    background: radial-gradient(circle at 12% -5%, rgba(99, 102, 241, 0.22), transparent 45%), radial-gradient(circle at 90% 0%, rgba(139, 92, 246, 0.2), transparent 40%), var(--bg-main);
+    border-radius: 20px;
+    border: 1px solid var(--border-soft);
+    padding: 24px;
+    color: var(--text-main);
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .ahp-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+
+  .back-link {
+    color: #dbeafe;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    border: 1px solid rgba(219, 234, 254, 0.24);
+    padding: 8px 12px;
+    border-radius: 999px;
+  }
+
+  .ahp-title h2 {
+    font-family: 'Playfair Display', serif;
+    margin: 0;
+    font-size: clamp(28px, 3.5vw, 40px);
+  }
+
+  .ahp-title p {
+    margin: 8px 0 0;
+    color: var(--text-muted);
+  }
+
+  .ahp-layout {
+    display: grid;
+    grid-template-columns: 270px minmax(0, 1fr);
+    gap: 18px;
+    align-items: start;
+  }
+
+  .stepper {
+    position: sticky;
+    top: 20px;
+    background: rgba(17, 24, 39, 0.94);
+    border: 1px solid var(--border-soft);
+    border-radius: 14px;
+    padding: 14px;
+  }
+
+  .stepper-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+.stepper-list li {
+    color: white; 
+  }
+  .step-link {
+    color: white;
+    text-decoration: none;
+    padding: 8px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    transition: 0.25s ease;
+  }
+
+  .step-link:hover,
+  .step-link.active {
+    border-color: rgba(99, 102, 241, 0.45);
+    background: rgba(99, 102, 241, 0.16);
+  }
+
+  .step-num {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    display: grid;
+    place-items: center;
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .step-num.done {
+    background: rgba(16, 185, 129, 0.2);
+    border-color: rgba(16, 185, 129, 0.6);
+    color: #6ee7b7;
+  }
+
+  .step-content {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .step-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-soft);
+    border-radius: 16px;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(24px);
+    transition: 0.5s ease;
+  }
+
+  .step-card.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .step-header {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    padding: 16px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+  }
+
+  .step-header h3 {
+    margin: 0;
+    font-size: 18px;
+    color: white;
+  }
+
+  .step-header p {
+    margin: 4px 0 0;
+    color: white;
+    font-size: 13px;
+  }
+
+  .step-body {
+    padding: 0 18px 18px;
+    display: none;
+  }
+
+  .step-card.open .step-body {
+    display: block;
+  }
+
+  .chip {
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .chip.sat {
+    color: #34d399;
+    background: rgba(16, 185, 129, 0.2);
+  }
+
+  .chip.unsat {
+    color: #f87171;
+    background: rgba(239, 68, 68, 0.22);
+  }
+
+  .kv-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .kv {
+    border: 1px solid var(--border-soft);
+    border-radius: 10px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  .kv .k {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .kv .v {
+    margin-top: 6px;
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  .rating-row {
+    margin-bottom: 10px;
+  }
+
+  .rating-head {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    font-size: 13px;
+  }
+
+  .bar-wrap {
+    height: 9px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    width: 0;
+    background: var(--accent-grad);
+    animation: fillUp 0.9s ease forwards;
+  }
+
+  @keyframes fillUp {
+    to { width: var(--bar-width); }
+  }
+
+  .matrix-wrap {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 54px;
+    gap: 10px;
+    align-items: stretch;
+    overflow-x: auto;
+  }
+
+  table.matrix {
+    border-collapse: collapse;
+    min-width: 650px;
+    font-size: 12px;
+  }
+
+  table.matrix th,
+  table.matrix td {
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 8px;
+    text-align: center;
+  }
+
+  table.matrix th {
+    background: rgba(255, 255, 255, 0.03);
+    color: #c7d2fe;
+    font-weight: 600;
+  }
+
+  td.diag {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  td.gt {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.28), rgba(16, 185, 129, 0.08));
+  }
+
+  td.lt {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.27), rgba(239, 68, 68, 0.08));
+  }
+
+  .heat-scale {
+    border: 1px solid var(--border-soft);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .heat-scale div {
+    flex: 1;
+    display: grid;
+    place-items: center;
+    font-size: 10px;
+  }
+
+  .heat-scale .a { background: rgba(239, 68, 68, 0.22); }
+  .heat-scale .b { background: rgba(255, 255, 255, 0.07); }
+  .heat-scale .c { background: rgba(16, 185, 129, 0.24); }
+
+  .appear-cell {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+
+  .step-card.show .appear-cell {
+    animation: popCell 0.45s ease forwards;
+    animation-delay: var(--delay);
+  }
+
+  @keyframes popCell {
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .w-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+    font-size: 13px;
+  }
+
+  .w-table th,
+  .w-table td {
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.12);
+    padding: 9px;
+    text-align: left;
+  }
+
+  .consistency-box {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .consistency-card {
+    border: 1px solid var(--border-soft);
+    border-radius: 10px;
+    padding: 10px;
+    text-align: center;
+  }
+
+  .consistency-card .v {
+    margin-top: 6px;
+    font-weight: 700;
+    font-size: 17px;
+  }
+
+  .cr-big {
+    font-size: 36px;
+    font-family: 'Playfair Display', serif;
+    margin: 8px 0;
+    color: #10b981;
+  }
+
+  .cr-big.bad {
+    color: #ef4444;
+  }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    background: rgba(16, 185, 129, 0.2);
+    color: #6ee7b7;
+  }
+
+  .status-badge.bad {
+    background: rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
+  }
+
+  .acc-item {
+    border: 1px solid var(--border-soft);
+    border-radius: 10px;
+    margin-bottom: 8px;
+    overflow: hidden;
+  }
+
+  .acc-head {
+    width: 100%;
+    border: 0;
+    background: rgba(255, 255, 255, 0.02);
+    color: inherit;
+    padding: 10px 12px;
+    display: flex;
+    justify-content: space-between;
+    cursor: pointer;
+  }
+
+  .acc-body {
+    display: none;
+    padding: 0 12px 12px;
+  }
+
+  .acc-item.open .acc-body {
+    display: block;
+  }
+
+  .final-score {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 14px;
+  }
+
+  .final-score td,
+  .final-score th {
+    border: 1px solid var(--border-soft);
+    padding: 10px;
+    text-align: center;
+  }
+
+  .pa-intro-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 10px;
+    margin: 8px 0 14px;
+  }
+
+  .pa-intro-card {
+    background: #111827;
+    border: 1px solid var(--border-soft);
+    border-left: 3px solid #6366f1;
+    border-radius: 10px;
+    padding: 12px;
+    position: relative;
+  }
+
+  .pa-intro-card.pa1 { border-left-color: #6366f1; }
+  .pa-intro-card.pa2 { border-left-color: #8b5cf6; }
+  .pa-intro-card.pa3 { border-left-color: #10b981; }
+
+  .pa-intro-card.recommended {
+    border: 1px solid currentColor;
+    box-shadow: 0 0 0 1px currentColor inset, 0 10px 30px -16px currentColor;
+  }
+
+  .pa-intro-card.pa1.recommended { color: #a5b4fc; }
+  .pa-intro-card.pa2.recommended { color: #c4b5fd; }
+  .pa-intro-card.pa3.recommended { color: #6ee7b7; }
+
+  .pa-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 8px;
+    background: rgba(0, 0, 0, 0.22);
+  }
+
+  .pa-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .pa-icon {
+    font-size: 1.9rem;
+    line-height: 1;
+  }
+
+  .pa-title {
+    font-weight: 700;
+    font-size: 14px;
+  }
+
+  .pa-title.pa1 { color: #a5b4fc; }
+  .pa-title.pa2 { color: #c4b5fd; }
+  .pa-title.pa3 { color: #6ee7b7; }
+
+  .pa-desc {
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 1.5;
+    margin: 0 0 6px;
+  }
+
+  .pa-fit {
+    font-size: 12px;
+    color: #d1d5db;
+    margin: 0;
+  }
+
+  .breakdown-total {
+    font-weight: 700;
+    background: #1e2535;
+    border-top: 2px solid #6366f1;
+  }
+
+  .recommended-col {
+    background: rgba(99, 102, 241, 0.08);
+  }
+
+  .ahp-score-explanation {
+    margin-top: 10px;
+    background: #0f172a;
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    border-left: 4px solid #6366f1;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    color: #dbeafe;
+  }
+
+  .explanation-header {
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .ahp-score-explanation ul {
+    margin: 0;
+    padding-left: 18px;
+  }
+
+  .ahp-score-explanation li {
+    margin-bottom: 6px;
+    color: #cbd5e1;
+    font-size: 13px;
+  }
+
+  .winner-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .winner-list {
+    margin: 8px 0 0;
+    padding-left: 18px;
+    color: #cbd5e1;
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .winner-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+
+  .winner-btn {
+    border: 1px solid rgba(99, 102, 241, 0.45);
+    color: #e5e7eb;
+    background: rgba(99, 102, 241, 0.12);
+    border-radius: 8px;
+    padding: 8px 10px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .winner-btn:hover {
+    background: rgba(99, 102, 241, 0.24);
+  }
+
+  .winner {
+    border: 1px solid transparent;
+    background: linear-gradient(var(--bg-card), var(--bg-card)) padding-box, var(--accent-grad) border-box;
+    border-radius: 12px;
+    padding: 12px;
+    margin-top: 10px;
+  }
+
+  .winner strong {
+    color: #c7d2fe;
+  }
+
+  .nav-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  .nav-btn {
+    border: 1px solid var(--border-soft);
+    background: rgba(255, 255, 255, 0.03);
+    color: #e5e7eb;
+    border-radius: 10px;
+    padding: 10px 14px;
+    cursor: pointer;
+  }
+
+  .nav-btn:hover {
+    background: rgba(99, 102, 241, 0.18);
+    border-color: rgba(99, 102, 241, 0.4);
+  }
+
+  @media (max-width: 980px) {
+    .ahp-layout {
+      grid-template-columns: 1fr;
+    }
+
+    .stepper {
+      position: static;
+      overflow-x: auto;
+    }
+
+    .stepper-list {
+      flex-direction: row;
+      min-width: max-content;
+    }
+
+    .step-link {
+      min-width: 180px;
+    }
+  }
+
+  @media print {
+    .sidebar,
+    .stepper,
+    .nav-actions,
+    .winner-actions,
+    .step-header .material-symbols-rounded {
+      display: none !important;
+    }
+
+    .ahp-page,
+    .step-card,
+    .step-body {
+      background: #fff !important;
+      color: #111 !important;
+      border-color: #d1d5db !important;
+    }
+
+    .step-card {
+      page-break-inside: avoid;
+      break-inside: avoid;
+      opacity: 1 !important;
+      transform: none !important;
+    }
+
+    .step-body {
+      display: block !important;
+    }
+  }
+</style>
+
+<section class="ahp-page">
+  <div class="ahp-top">
+    <a href="{{ url_for('admin_feedback_list') }}" class="back-link">
+      <span class="material-symbols-rounded" style="font-size: 18px;">arrow_back</span>
+      Quay lại danh sách phản hồi
+    </a>
+    <div class="ahp-title">
+      <h2 style = "color: white;" >Chi tiết AHP phản hồi #{{ ahp_data.feedback.id }}</h2>
+      <p>Quy trình 6 bước từ dữ liệu đánh giá đến đề xuất phương án quyết định.</p>
+    </div>
+  </div>
+
+  <div class="ahp-layout">
+    <aside class="stepper">
+      <ol class="stepper-list">
+        <li><a class="step-link" href="#step1"><span class="step-num done">✓</span><span>Bước 1: Đánh giá khách hàng</span></a></li>
+        <li><a class="step-link" href="#step2"><span class="step-num done">✓</span><span>Bước 2: Ma trận so sánh cặp</span></a></li>
+        <li><a class="step-link" href="#step3"><span class="step-num done">✓</span><span>Bước 3: Chuẩn hóa ma trận</span></a></li>
+        <li><a class="step-link" href="#step4"><span class="step-num done">✓</span><span>Bước 4: Vector trọng số</span></a></li>
+        <li><a class="step-link" href="#step5"><span class="step-num done">✓</span><span>Bước 5: Kiểm tra nhất quán</span></a></li>
+        <li><a class="step-link" href="#step6"><span class="step-num done">✓</span><span>Bước 6: Xếp hạng phương án</span></a></li>
+      </ol>
+    </aside>
+
+    <div class="step-content">
+      <section id="step1" class="step-card open ahp-step">
+        <button class="step-header" type="button">
+          <div>
+            <h3>Bước 1 - Hiển thị đánh giá khách hàng</h3>
+            <p>Thông tin phản hồi, mức hài lòng và điểm từng tiêu chí đầu vào.</p>
+          </div>
+          <span class="material-symbols-rounded">expand_more</span>
+        </button>
+        <div class="step-body">
+          <div class="kv-grid">
+            <div class="kv"><div class="k">Mã phản hồi</div><div class="v">#{{ ahp_data.feedback.id }}</div></div>
+            <div class="kv"><div class="k">Hành khách</div><div class="v">{{ ahp_data.feedback.name }}</div></div>
+            <div class="kv"><div class="k">Ngày giờ</div><div class="v">{{ ahp_data.feedback.date.strftime('%d/%m/%Y %H:%M') if ahp_data.feedback.date else '-' }}</div></div>
+            <div class="kv"><div class="k">Loại ghế</div><div class="v">{{ ahp_data.feedback.seat_class }}</div></div>
+            <div class="kv"><div class="k">Trạng thái</div><div class="v"><span class="chip {{ 'sat' if ahp_data.feedback.satisfaction == 'satisfied' else 'unsat' }}">{{ ahp_data.feedback.satisfaction }}</span></div></div>
+            <div class="kv"><div class="k">Điểm AHP</div><div class="v">{{ '%.3f'|format(ahp_data.feedback.score) }}</div></div>
+          </div>
+
+          {% for criterion, score in ahp_data.feedback.criteria_scores.items() %}
+          <div class="rating-row">
+            <div class="rating-head"><span>{{ criterion }}</span><strong>{{ '%.2f'|format(score) }}/5</strong></div>
+            <div class="bar-wrap"><div class="bar-fill" style="--bar-width: {{ ((score / 5) * 100)|round(2) }}%;"></div></div>
+          </div>
+          {% endfor %}
+
+          {% if ahp_data.feedback.comment %}
+          <div class="kv" style="margin-top: 10px;">
+            <div class="k">Nhận xét của khách hàng</div>
+            <div class="v" style="font-size: 14px; font-weight: 500;">{{ ahp_data.feedback.comment }}</div>
+          </div>
+          {% endif %}
+        </div>
+      </section>
+
+      <section id="step2" class="step-card ahp-step">
+        <button class="step-header" type="button">
+          <div>
+            <h3>Bước 2 - Ma trận so sánh cặp các tiêu chí</h3>
+            <p>Dựa trên điểm số các tiêu chí từ bước 1: a[i][j] = score[i] / score[j].</p>
+          </div>
+          <span class="material-symbols-rounded">expand_more</span>
+        </button>
+        <div class="step-body">
+          <div class="matrix-wrap">
+            <table class="matrix">
+              <thead>
+                <tr>
+                  <th>Tiêu chí</th>
+                  {% for criterion in ahp_data.criteria_names_vi %}
+                  <th>{{ criterion }}</th>
+                  {% endfor %}
+                </tr>
+              </thead>
+              <tbody>
+                {% for i in range(n) %}
+                <tr>
+                  <th>{{ ahp_data.criteria_names_vi[i] }}</th>
+                  {% for j in range(n) %}
+                  {% set val = ahp_data.step2_matrix[i][j] %}
+                  {% if i == j %}
+                  <td class="diag" title="Đường chéo chính luôn bằng 1">{{ '%.3f'|format(val) }}</td>
+                  {% elif val > 1 %}
+                  <td class="gt" title="Tiêu chí {{ ahp_data.criteria_names_vi[i] }} quan trọng hơn {{ ahp_data.criteria_names_vi[j] }} {{ '%.2f'|format(val) }} lần">{{ '%.3f'|format(val) }}</td>
+                  {% else %}
+                  <td class="lt" title="Tiêu chí {{ ahp_data.criteria_names_vi[i] }} kém quan trọng hơn {{ ahp_data.criteria_names_vi[j] }}">{{ '%.3f'|format(val) }}</td>
+                  {% endif %}
+                  {% endfor %}
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+            <div class="heat-scale">
+              <div class="a">&lt;1</div>
+              <div class="b">1</div>
+              <div class="c">&gt;1</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="step3" class="step-card ahp-step">
+        <button class="step-header" type="button">
+          <div>
+            <h3>Bước 3 - Chuẩn hóa ma trận</h3>
+            <p>Chia từng phần tử cho tổng cột tương ứng để đưa ma trận về miền [0, 1].</p>
+          </div>
+          <span class="material-symbols-rounded">expand_more</span>
+        </button>
+        <div class="step-body">
+          <table class="matrix" style="min-width: 540px; margin-bottom: 12px;">
+            <thead>
+              <tr>
+                <th>Tổng cột</th>
+                {% for criterion in ahp_data.criteria_names_vi %}
+                <th>{{ criterion }}</th>
+                {% endfor %}
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th>Sum</th>
+                {% for sum_col in ahp_data.step3_column_sums %}
+                <td>{{ '%.3f'|format(sum_col) }}</td>
+                {% endfor %}
+              </tr>
+            </tbody>
+          </table>
+
+          <table class="matrix">
+            <thead>
+              <tr>
+                <th>Tiêu chí</th>
+                {% for criterion in ahp_data.criteria_names_vi %}
+                <th>{{ criterion }}</th>
+                {% endfor %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for i in range(n) %}
+              <tr>
+                <th>{{ ahp_data.criteria_names_vi[i] }}</th>
+                {% for j in range(n) %}
+                {% set cell = ahp_data.step3_normalized[i][j] %}
+                <td class="appear-cell" style="--delay: {{ ((i * n + j) * 25) }}ms;">{{ '%.4f'|format(cell) }}</td>
+                {% endfor %}
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="step4" class="step-card ahp-step">
+        <button class="step-header" type="button">
+          <div>
+            <h3>Bước 4 - Vector trọng số các tiêu chí</h3>
+            <p>Trọng số bằng trung bình cộng theo hàng của ma trận chuẩn hóa.</p>
+          </div>
+          <span class="material-symbols-rounded">expand_more</span>
+        </button>
+        <div class="step-body">
+          <canvas id="weightsChart" height="190"></canvas>
+          <table class="w-table">
+            <thead>
+              <tr>
+                <th>Tiêu chí</th>
+                <th>Trọng số</th>
+                <th>Tỷ lệ (%)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for i in range(n) %}
+              <tr>
+                <td>{{ ahp_data.criteria_names_vi[i] }}</td>
+                <td>{{ '%.4f'|format(ahp_data.step4_weights[i]) }}</td>
+                <td>{{ '%.2f'|format(ahp_data.step4_weights[i] * 100) }}%</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="step5" class="step-card ahp-step">
+        <button class="step-header" type="button">
+          <div>
+            <h3>Bước 5 - Kiểm tra tính nhất quán (CR)</h3>
+            <p>CI = (λmax - n) / (n - 1), CR = CI / RI theo bảng Saaty.</p>
+          </div>
+          <span class="material-symbols-rounded">expand_more</span>
+        </button>
+        <div class="step-body">
+          <div class="consistency-box">
+            <div class="consistency-card"><div>λmax</div><div class="v">{{ '%.4f'|format(ahp_data.step5_consistency.lambda_max) }}</div></div>
+            <div class="consistency-card"><div>n</div><div class="v">{{ ahp_data.step5_consistency.n }}</div></div>
+            <div class="consistency-card"><div>CI</div><div class="v">{{ '%.4f'|format(ahp_data.step5_consistency.CI) }}</div></div>
+            <div class="consistency-card"><div>RI</div><div class="v">{{ '%.2f'|format(ahp_data.step5_consistency.RI) }}</div></div>
+          </div>
+
+          <div class="cr-big {{ 'bad' if not ahp_data.step5_consistency.is_consistent else '' }}">CR = {{ '%.4f'|format(ahp_data.step5_consistency.CR) }}</div>
+          <div class="status-badge {{ 'bad' if not ahp_data.step5_consistency.is_consistent else '' }}">
+            {% if ahp_data.step5_consistency.is_consistent %}
+            ✓ Ma trận nhất quán
+            {% else %}
+            ⚠ Ma trận không nhất quán
+            {% endif %}
+          </div>
+          <div style="margin-top: 12px; max-width: 220px;">
+            <canvas id="crGauge" height="130"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <section id="step6" class="step-card ahp-step">
+        <button class="step-header" type="button">
+          <div>
+            <h3>Bước 6 - Xếp hạng các phương án (PA1, PA2, PA3)</h3>
+            <p>So sánh cặp theo từng tiêu chí, tổng hợp điểm và đề xuất phương án tối ưu.</p>
+          </div>
+          <span class="material-symbols-rounded">expand_more</span>
+        </button>
+        <div class="step-body">
+          <div class="pa-intro-grid">
+            <article class="pa-intro-card pa1 {% if recommended == 'PA1' %}recommended{% endif %}">
+              {% if recommended == 'PA1' %}<span class="pa-badge">🏆 Được đề xuất</span>{% endif %}
+              <div class="pa-head">
+                <span class="pa-icon">🛠️</span>
+                <div class="pa-title pa1">PA1 — {{ pa_titles['PA1'] }}</div>
+              </div>
+              <p class="pa-desc">Tập trung nâng cao các tiêu chí vận hành cốt lõi: độ thoải mái ghế, vệ sinh cabin, thái độ tiếp viên, đúng giờ. Áp dụng khi khách hàng có điểm thấp ở các tiêu chí dịch vụ trực tiếp.</p>
+              <p class="pa-fit">✓ Phù hợp khi: Khách hàng unsatisfied với dịch vụ cơ bản</p>
+            </article>
+
+            <article class="pa-intro-card pa2 {% if recommended == 'PA2' %}recommended{% endif %}">
+              {% if recommended == 'PA2' %}<span class="pa-badge">🏆 Được đề xuất</span>{% endif %}
+              <div class="pa-head">
+                <span class="pa-icon">🎁</span>
+                <div class="pa-title pa2">PA2 — {{ pa_titles['PA2'] }}</div>
+              </div>
+              <p class="pa-desc">Triển khai hoặc cải thiện chương trình tích điểm, ưu đãi miles, quà tặng cho hành khách thường xuyên. Giữ chân khách hàng bằng giá trị cộng thêm ngoài chuyến bay.</p>
+              <p class="pa-fit">✓ Phù hợp khi: Khách hàng trung tính hoặc satisfied nhưng cần gắn kết</p>
+            </article>
+
+            <article class="pa-intro-card pa3 {% if recommended == 'PA3' %}recommended{% endif %}">
+              {% if recommended == 'PA3' %}<span class="pa-badge">🏆 Được đề xuất</span>{% endif %}
+              <div class="pa-head">
+                <span class="pa-icon">⬆️</span>
+                <div class="pa-title pa3">PA3 — {{ pa_titles['PA3'] }}</div>
+              </div>
+              <p class="pa-desc">Gợi ý nâng hạng cho chuyến bay tiếp theo (Economy → Business, Business → First Class). Tận dụng trải nghiệm tích cực hiện tại để đề xuất mức dịch vụ cao hơn phù hợp hơn.</p>
+              <p class="pa-fit">✓ Phù hợp khi: Khách hàng satisfied, có tiềm năng nâng hạng</p>
+            </article>
+          </div>
+
+          {% for criterion, matrix in ahp_data.step6_alternatives.per_criterion.items() %}
+          <div class="acc-item {% if loop.first %}open{% endif %}">
+            <button type="button" class="acc-head">
+              <span>{{ loop.index }}. {{ criterion }}</span>
+              <span class="material-symbols-rounded" style="font-size: 18px;">expand_more</span>
+            </button>
+            <div class="acc-body">
+              <table class="matrix" style="min-width: 420px;">
+                <thead>
+                  <tr><th></th><th>PA1</th><th>PA2</th><th>PA3</th></tr>
+                </thead>
+                <tbody>
+                  <tr><th>PA1</th><td>{{ '%.3f'|format(matrix[0][0]) }}</td><td>{{ '%.3f'|format(matrix[0][1]) }}</td><td>{{ '%.3f'|format(matrix[0][2]) }}</td></tr>
+                  <tr><th>PA2</th><td>{{ '%.3f'|format(matrix[1][0]) }}</td><td>{{ '%.3f'|format(matrix[1][1]) }}</td><td>{{ '%.3f'|format(matrix[1][2]) }}</td></tr>
+                  <tr><th>PA3</th><td>{{ '%.3f'|format(matrix[2][0]) }}</td><td>{{ '%.3f'|format(matrix[2][1]) }}</td><td>{{ '%.3f'|format(matrix[2][2]) }}</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          {% endfor %}
+
+          {% set rec_key = recommended.lower() %}
+          {% set delta = (final_scores[recommended] - second_best_score) %}
+          <table class="final-score">
+            <thead>
+              <tr>
+                <th>Tiêu chí</th>
+                <th>Trọng số</th>
+                <th class="{% if recommended == 'PA1' %}recommended-col{% endif %}">🛠️ Điểm PA1</th>
+                <th class="{% if recommended == 'PA2' %}recommended-col{% endif %}">🎁 Điểm PA2</th>
+                <th class="{% if recommended == 'PA3' %}recommended-col{% endif %}">⬆️ Điểm PA3</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for criterion_name, row in breakdown.items() %}
+              <tr>
+                <th style="text-align: left;">{{ criterion_name }}</th>
+                <td>{{ '%.1f'|format(row.weight * 100) }}%</td>
+                <td class="{% if recommended == 'PA1' %}recommended-col{% endif %}" title="Đóng góp = {{ '%.3f'|format(row.weight) }} × {{ '%.3f'|format(row.pa1) }} = {{ '%.3f'|format(row.weight * row.pa1) }}">{{ '%.3f'|format(row.pa1) }}</td>
+                <td class="{% if recommended == 'PA2' %}recommended-col{% endif %}" title="Đóng góp = {{ '%.3f'|format(row.weight) }} × {{ '%.3f'|format(row.pa2) }} = {{ '%.3f'|format(row.weight * row.pa2) }}">{{ '%.3f'|format(row.pa2) }}</td>
+                <td class="{% if recommended == 'PA3' %}recommended-col{% endif %}" title="Đóng góp = {{ '%.3f'|format(row.weight) }} × {{ '%.3f'|format(row.pa3) }} = {{ '%.3f'|format(row.weight * row.pa3) }}">{{ '%.3f'|format(row.pa3) }}</td>
+              </tr>
+              {% endfor %}
+              <tr class="breakdown-total">
+                <th style="text-align: left;">Tổng điểm AHP</th>
+                <td>100%</td>
+                <td class="{% if recommended == 'PA1' %}recommended-col{% endif %}">{{ '%.3f'|format(final_scores['PA1']) }}</td>
+                <td class="{% if recommended == 'PA2' %}recommended-col{% endif %}">{{ '%.3f'|format(final_scores['PA2']) }}</td>
+                <td class="{% if recommended == 'PA3' %}recommended-col{% endif %}">{{ '%.3f'|format(final_scores['PA3']) }}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="ahp-score-explanation">
+            <div class="explanation-header">ℹ️ Cách đọc điểm tổng AHP</div>
+            <ul>
+              <li>Điểm tổng nằm trong khoảng [0, 1] — tổng 3 phương án luôn = 1.00</li>
+              <li>Điểm cao hơn = phương án phù hợp hơn với hồ sơ khách hàng này</li>
+              <li>PA1 = {{ '%.3f'|format(final_scores['PA1']) }} nghĩa là PA1 chiếm {{ (final_scores['PA1'] * 100)|round(1) }}% mức độ phù hợp tổng thể</li>
+              <li>
+                {% if delta > 0.10 %}
+                Khoảng cách so với phương án tiếp theo: {{ (delta * 100)|round(1) }}% → <strong style="color:#10b981">Ưu thế rõ ràng</strong>
+                {% elif delta > 0.05 %}
+                Khoảng cách so với phương án tiếp theo: {{ (delta * 100)|round(1) }}% → <strong style="color:#f59e0b">Ưu thế nhẹ</strong>
+                {% else %}
+                Khoảng cách so với phương án tiếp theo: {{ (delta * 100)|round(1) }}% → <strong style="color:#ef4444">Xấp xỉ nhau — nên cân nhắc kết hợp</strong>
+                {% endif %}
+              </li>
+            </ul>
+          </div>
+
+          <div class="winner" id="ahpConclusion">
+            <div class="winner-title">
+              <strong>🏆 Kết luận: Hệ thống đề xuất {{ recommended }} — {{ pa_titles[recommended] }}</strong>
+            </div>
+            <div style="margin-top: 8px; color: var(--text-muted);">📊 Lý do dựa trên AHP:</div>
+            <ul class="winner-list">
+              <li>{{ recommended }} đạt điểm cao nhất ({{ '%.3f'|format(final_scores[recommended]) }}) sau khi nhân trọng số tất cả tiêu chí.</li>
+              <li>Vượt trội ở: {{ top_criteria[0] if top_criteria|length > 0 else '-' }}{% if top_criteria|length > 1 %} và {{ top_criteria[1] }}{% endif %} — trọng số {% if top_criteria|length > 0 %}{{ (breakdown[top_criteria[0]].weight * 100)|round(1) }}%{% else %}0%{% endif %}{% if top_criteria|length > 1 %} và {{ (breakdown[top_criteria[1]].weight * 100)|round(1) }}%{% endif %}.</li>
+              <li>Khoảng cách so với PA xếp 2: +{{ (delta * 100)|round(1) }}% → {% if delta > 0.10 %}Ưu thế rõ ràng{% elif delta > 0.05 %}Ưu thế nhẹ{% else %}Xấp xỉ{% endif %}.</li>
+            </ul>
+            <div style="margin-top: 8px; color: #fca5a5; font-weight: 700;">⚠️ Lưu ý cho quản trị viên:</div>
+            <ul class="winner-list">
+              <li>Khách hàng thuộc nhóm {{ ahp_data.feedback.satisfaction }}, điểm AHP: {{ '%.3f'|format(ahp_data.feedback.score) }}.</li>
+              {% if ahp_data.feedback.satisfaction == 'unsatisfied' %}
+              <li>Ưu tiên triển khai ngay trong chuyến bay tiếp theo.</li>
+              {% else %}
+              <li>Duy trì để giữ mức hài lòng hiện tại.</li>
+              {% endif %}
+            </ul>
+
+            <div class="winner-actions">
+              <button type="button" class="winner-btn" id="copyConclusionBtn">📋 Sao chép kết luận</button>
+              <button type="button" class="winner-btn" id="printAnalysisBtn">🖨️ In phân tích</button>
+            </div>
+          </div>
+
+          <div style="margin-top: 14px;">
+            <canvas id="radarChart" height="180"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <div class="nav-actions">
+        <button type="button" class="nav-btn" id="prevStep">Bước trước</button>
+        <button type="button" class="nav-btn" id="nextStep">Bước tiếp theo</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const stepCards = Array.from(document.querySelectorAll('.ahp-step'));
+  const stepLinks = Array.from(document.querySelectorAll('.step-link'));
+
+  stepCards.forEach((card) => {
+    const header = card.querySelector('.step-header');
+    header.addEventListener('click', () => {
+      card.classList.toggle('open');
+    });
+  });
+
+  document.querySelectorAll('.acc-head').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      btn.closest('.acc-item').classList.toggle('open');
+    });
+  });
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('show');
+        const id = entry.target.id;
+        stepLinks.forEach((link) => link.classList.toggle('active', link.getAttribute('href') === '#' + id));
+      }
+    });
+  }, { threshold: 0.25 });
+
+  stepCards.forEach((card) => observer.observe(card));
+
+  const stepIds = stepCards.map((s) => s.id);
+  let navIdx = 0;
+
+  const scrollToStep = (idx) => {
+    if (idx < 0 || idx >= stepIds.length) return;
+    navIdx = idx;
+    document.getElementById(stepIds[idx]).scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  document.getElementById('prevStep').addEventListener('click', () => scrollToStep(navIdx - 1));
+  document.getElementById('nextStep').addEventListener('click', () => scrollToStep(navIdx + 1));
+
+  stepLinks.forEach((link, idx) => {
+    link.addEventListener('click', () => {
+      navIdx = idx;
+    });
+  });
+
+  const criteriaLabels = {{ ahp_data.criteria_names_vi|tojson }};
+  const weights = {{ ahp_data.step4_weights|tojson }};
+
+  new Chart(document.getElementById('weightsChart'), {
+    type: 'bar',
+    data: {
+      labels: criteriaLabels,
+      datasets: [{
+        label: 'Trọng số',
+        data: weights.map((v) => +(v * 100).toFixed(2)),
+        backgroundColor: ['#6366f1', '#6d63f1', '#765ff2', '#815cf2', '#8b5cf6', '#9b6af8'],
+        borderRadius: 8,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      animation: { duration: 1100 },
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#cbd5e1' }, grid: { color: 'rgba(255,255,255,0.09)' } },
+        y: { ticks: { color: '#cbd5e1' }, grid: { display: false } }
+      }
+    }
+  });
+
+  const crValue = {{ ahp_data.step5_consistency.CR|tojson }};
+  const maxGauge = 0.2;
+  new Chart(document.getElementById('crGauge'), {
+    type: 'doughnut',
+    data: {
+      labels: ['CR', 'Khoảng còn lại'],
+      datasets: [{
+        data: [Math.min(crValue, maxGauge), Math.max(maxGauge - Math.min(crValue, maxGauge), 0)],
+        backgroundColor: [crValue < 0.1 ? '#10b981' : '#ef4444', 'rgba(255,255,255,0.08)'],
+        borderWidth: 0,
+      }]
+    },
+    options: {
+      circumference: 180,
+      rotation: 270,
+      cutout: '72%',
+      plugins: {
+        legend: { display: false },
+        tooltip: { enabled: false }
+      }
+    }
+  });
+
+  const radarData = {{ ahp_data.step6_alternatives.radar|tojson }};
+  new Chart(document.getElementById('radarChart'), {
+    type: 'radar',
+    data: {
+      labels: criteriaLabels,
+      datasets: [
+        { label: 'PA1', data: radarData.PA1, backgroundColor: 'rgba(99,102,241,0.2)', borderColor: '#6366f1' },
+        { label: 'PA2', data: radarData.PA2, backgroundColor: 'rgba(139,92,246,0.2)', borderColor: '#8b5cf6' },
+        { label: 'PA3', data: radarData.PA3, backgroundColor: 'rgba(16,185,129,0.16)', borderColor: '#10b981' }
+      ]
+    },
+    options: {
+      scales: {
+        r: {
+          suggestedMin: 0.5,
+          suggestedMax: 1,
+          angleLines: { color: 'rgba(255,255,255,0.13)' },
+          grid: { color: 'rgba(255,255,255,0.13)' },
+          pointLabels: { color: '#cbd5e1' },
+          ticks: { color: '#9ca3af', backdropColor: 'transparent' }
+        }
+      },
+      plugins: { legend: { labels: { color: '#e5e7eb' } } }
+    }
+  });
+
+  const copyBtn = document.getElementById('copyConclusionBtn');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', async () => {
+      const text = document.getElementById('ahpConclusion').innerText;
+      try {
+        await navigator.clipboard.writeText(text);
+        const old = copyBtn.textContent;
+        copyBtn.textContent = '✓ Đã sao chép';
+        setTimeout(() => {
+          copyBtn.textContent = old;
+        }, 2000);
+      } catch (e) {
+        console.error(e);
+      }
+    });
+  }
+
+  const printBtn = document.getElementById('printAnalysisBtn');
+  if (printBtn) {
+    printBtn.addEventListener('click', () => window.print());
+  }
+</script>
+{% endblock %}

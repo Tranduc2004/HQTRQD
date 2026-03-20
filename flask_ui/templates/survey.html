@@ -1,0 +1,266 @@
+{% extends 'base.html' %}
+{% block content %}
+<section class="hero" style="background: linear-gradient(135deg, #1D4ED8 0%, #312E81 100%);">
+  <h2>Đánh giá chuyến bay (Khảo sát)</h2>
+  <p>Hãy chia sẻ trải nghiệm bay của bạn qua 6 tiêu chí dịch vụ. Mỗi đánh giá sẽ giúp trí tuệ nhân tạo (AI) cải thiện dự đoán và chất lượng phục vụ của chúng tôi.</p>
+</section>
+
+{% if error %}
+<div class="flash danger">{{ error }}</div>
+{% else %}
+<section class="card">
+  <h3><span class="material-symbols-rounded">edit_document</span> Nhập thông tin khảo sát</h3>
+  <form method="post" enctype="multipart/form-data" class="survey-form">
+    <div class="grid-2">
+      <label>
+        Hạng vé máy bay
+        <select name="ticket_class" id="ticket_class_select">
+          {% for option in available_classes %}
+          <option value="{{ option }}" {% if option == selected_class %}selected{% endif %}>{{ option }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>
+        Họ tên Hành khách
+        <input type="text" name="passenger_name" placeholder="Bạn có thể để trống (Ẩn danh)" />
+      </label>
+    </div>
+    
+    <div class="grid-2">
+      <!-- Demographic Info -->
+      <label>
+        <span style="display: flex; align-items: center; gap: 10px; font-size: 15px;">
+          <span class="material-symbols-rounded" style="color: var(--primary); font-size: 20px;">{{ feature_icons.get('Gender', 'group') }}</span>
+          {{ feature_vi.get('Gender', 'Giới tính') }}
+        </span>
+        <select name="Gender" style="margin-top: 12px;">
+          <option value="Male">Nam</option>
+          <option value="Female">Nữ</option>
+        </select>
+      </label>
+      
+      <label>
+        <span style="display: flex; align-items: center; gap: 10px; font-size: 15px;">
+          <span class="material-symbols-rounded" style="color: var(--primary); font-size: 20px;">{{ feature_icons.get('Customer Type', 'star_rate') }}</span>
+          {{ feature_vi.get('Customer Type', 'Loại khách hàng') }}
+        </span>
+        <select name="Customer Type" style="margin-top: 12px;">
+          <option value="Loyal Customer">Khách hàng thân thiết</option>
+          <option value="disloyal Customer">Khách hàng mới</option>
+        </select>
+      </label>
+      
+      <label>
+        <span style="display: flex; align-items: center; gap: 10px; font-size: 15px;">
+          <span class="material-symbols-rounded" style="color: var(--primary); font-size: 20px;">{{ feature_icons.get('Type of Travel', 'work') }}</span>
+          {{ feature_vi.get('Type of Travel', 'Mục đích chuyến đi') }}
+        </span>
+        <select name="Type of Travel" style="margin-top: 12px;">
+          <option value="Business travel">Công tác</option>
+          <option value="Personal Travel">Cá nhân</option>
+        </select>
+      </label>
+      
+      <label>
+        <span style="display: flex; align-items: center; gap: 10px; font-size: 15px;">
+          <span class="material-symbols-rounded" style="color: var(--primary); font-size: 20px;">{{ feature_icons.get('Age', 'cake') }}</span>
+          {{ feature_vi.get('Age', 'Độ tuổi') }}
+        </span>
+        <input type="number" name="Age" min="1" max="100" value="30" style="margin-top: 12px; padding: 12px; border-radius: var(--radius-md); border: 1px solid var(--border-color); width: 100%; outline: none;" required />
+      </label>
+    </div>
+
+    <div id="dynamic-features-container">
+      {% for cls, groups in class_grouping.items() %}
+      <div class="class-feature-group" data-class="{{ cls }}" style="display: {{ 'block' if cls == selected_class else 'none' }}; opacity: {{ '1' if cls == selected_class else '0' }}; transition: opacity 0.3s ease;">
+        
+        <!-- Quan trọng Cao -->
+        <h3 style="margin-top: 40px; margin-bottom: 20px; font-size: 20px; color: var(--danger); border-bottom: 2px solid var(--border-color); padding-bottom: 8px; display:flex; align-items:center; gap:8px;">
+          <span class="material-symbols-rounded">stars</span> Tiêu chí Quan trọng (Mức ảnh hưởng lớn)
+        </h3>
+        <div class="grid-2">
+          {% for feature in groups['high'] %}
+          <label style="padding: 16px; background: #fffcfc; border-radius: var(--radius-md); border: 2px solid #fee2e2; box-shadow: var(--shadow-sm); transition: var(--transition);">
+            <span style="display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 500; color: #991b1b;">
+              <span class="material-symbols-rounded" style="color: #ef4444; font-size: 20px;">{{ feature_icons.get(feature, 'star') }}</span>
+              {{ feature_vi.get(feature, feature) }}
+            </span>
+            <div style="font-size: 12px; color: var(--text-muted); margin-left: 30px; margin-bottom: 8px;">{{ feature }}</div>
+            
+            {% if feature in ['Departure Delay in Minutes', 'Arrival Delay in Minutes'] %}
+            <input type="number" name="{{ feature }}" min="0" max="500" value="0" style="margin-top: 8px; padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); width: 100%; outline: none;" {% if cls == selected_class %}required{% endif %} />
+            {% else %}
+            <div style="display: flex; align-items: center; gap: 16px; margin-top: 12px;">
+              <input type="range" name="{{ feature }}" min="0" max="5" value="3" oninput="this.nextElementSibling.value = this.value" />
+              <output style="background: rgba(239, 68, 68, 0.1); color: #b91c1c; padding: 4px 14px; border-radius: 8px; font-weight: 600;">3</output>
+            </div>
+            {% endif %}
+          </label>
+          {% endfor %}
+        </div>
+
+        <!-- Ít Quan trọng -->
+        <h3 style="margin-top: 40px; margin-bottom: 20px; font-size: 20px; color: var(--secondary); border-bottom: 2px solid var(--border-color); padding-bottom: 8px; display:flex; align-items:center; gap:8px;">
+          <span class="material-symbols-rounded">low_priority</span> Tiêu chí Ít ảnh hưởng
+        </h3>
+        <div class="grid-2">
+          {% for feature in groups['low'] %}
+          <label style="padding: 16px; background: var(--surface); border-radius: var(--radius-md); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); transition: var(--transition);">
+            <span style="display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 500;">
+              <span class="material-symbols-rounded" style="color: var(--primary); font-size: 20px;">{{ feature_icons.get(feature, 'star') }}</span>
+              {{ feature_vi.get(feature, feature) }}
+            </span>
+            <div style="font-size: 12px; color: var(--text-muted); margin-left: 30px; margin-bottom: 8px;">{{ feature }}</div>
+            
+            <div style="display: flex; align-items: center; gap: 16px; margin-top: 12px;">
+              <input type="range" name="{{ feature }}" min="0" max="5" value="3" oninput="this.nextElementSibling.value = this.value" />
+              <output style="background: rgba(79, 70, 229, 0.08); color: var(--primary); padding: 4px 14px; border-radius: 8px; font-weight: 600;">3</output>
+            </div>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    
+    <hr style="margin: 40px 0; border: none; border-top: 1px solid var(--border-color);" />
+
+    <label style="margin-top: 16px;">
+      <span style="display: flex; align-items: center; gap: 8px;">
+        <span class="material-symbols-rounded">attach_file</span> 
+        Tệp đính kèm (Hình ảnh, minh chứng trải nghiệm...)
+      </span>
+      <input type="file" name="upload_file" accept=".png,.jpg,.jpeg" style="padding-top: 24px;" />
+    </label>
+
+    <button class="btn" type="submit" style="margin-top: 24px;">
+      <span class="material-symbols-rounded">send</span> Gửi phản hồi Trải nghiệm
+    </button>
+  </form>
+</section>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const classSelect = document.getElementById('ticket_class_select');
+    const classGroups = document.querySelectorAll('.class-feature-group');
+
+    function updateGroups(selectedClass) {
+      classGroups.forEach(group => {
+        // Toggle required attribute and disabled for inputs in group
+        const inputs = group.querySelectorAll('input, select, textarea');
+        
+        if (group.dataset.class === selectedClass) {
+          group.style.display = 'block';
+          // Small delay to allow display:block to apply before fading in
+          setTimeout(() => {
+            group.style.opacity = '1';
+          }, 10);
+          
+          inputs.forEach(inp => {
+             inp.disabled = false;
+             if (inp.dataset.required === "true") {
+                 inp.required = true;
+             }
+          });
+        } else {
+          group.style.opacity = '0';
+          setTimeout(() => {
+            group.style.display = 'none';
+          }, 300); // Wait for transition
+          
+          inputs.forEach(inp => {
+             if (inp.required) {
+                 inp.dataset.required = "true";
+             }
+             inp.required = false;
+             inp.disabled = true;
+          });
+        }
+      });
+    }
+
+    classSelect.addEventListener('change', function(e) {
+      updateGroups(e.target.value);
+    });
+    
+    // Initial call
+    updateGroups(classSelect.value);
+  });
+</script>
+{% endif %}
+
+{% if result %}
+<div class="modal-backdrop" id="successModal">
+  <div class="modal-content card result-good" style="text-align: center; max-width: 450px; margin: 15vh auto; position: relative; animation: slideDown 0.3s ease-out;">
+    <button class="modal-close" onclick="document.getElementById('successModal').style.display='none'" style="position: absolute; top: 16px; right: 16px; background: none; border: none; cursor: pointer; color: var(--text-muted); padding: 4px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: background 0.2s;">
+      <span class="material-symbols-rounded">close</span>
+    </button>
+    <div style="margin-bottom: 20px;">
+        <span class="material-symbols-rounded" style="font-size: 56px; color: var(--primary); background: rgba(79, 70, 229, 0.1); padding: 16px; border-radius: 50%;">check_circle</span>
+    </div>
+    <h3 style="font-size: 24px; color: var(--secondary); margin-bottom: 12px;">Đánh giá Thành công</h3>
+    <p style="font-size: 15px; line-height: 1.6; color: var(--text-secondary);">
+      Cảm ơn bạn đã tham gia khảo sát. Dữ liệu đánh giá của bạn đã được ghi nhận an toàn trên hệ thống.
+    </p>
+    <button class="btn" style="margin-top: 24px; width: 100%; border-radius: 8px; padding: 12px;" onclick="window.location.href='{{ url_for('survey') }}'">Hoàn tất</button>
+  </div>
+</div>
+
+<style>
+.modal-backdrop {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(5px);
+  z-index: 9999;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+.modal-close:hover {
+  background: rgba(0,0,0,0.05);
+  color: var(--danger) !important;
+}
+@keyframes slideDown {
+  from { transform: translateY(-30px) scale(0.95); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+</style>
+
+{% if result.satisfaction_level == 'satisfied' %}
+<section class="card" style="margin-top: 24px; border-left: 6px solid #22a36e;">
+{% else %}
+<section class="card" style="margin-top: 24px; border-left: 6px solid #d44747;">
+{% endif %}
+  <h3>
+    <span class="material-symbols-rounded">psychology</span>
+    Phương án xử lý phản hồi khách hàng
+  </h3>
+  <div class="grid-2" style="margin-bottom: 18px; gap: 12px;">
+    <article style="padding: 14px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: #f8fafc;">
+      <strong>Customer Satisfaction Level</strong>
+      <p style="margin-top: 8px; color: var(--text-secondary); font-size: 18px; font-weight: 700; text-transform: uppercase;">
+        {{ result.satisfaction_level }}
+      </p>
+    </article>
+    <article style="padding: 14px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: #f8fafc;">
+      <strong>Satisfaction Score</strong>
+      <p style="margin-top: 8px; color: var(--text-secondary); font-size: 18px; font-weight: 700;">
+        {{ '%.2f'|format(result.satisfaction_score) }}
+      </p>
+      <small style="color: var(--text-muted);">Logic: score >= 0.7 -> satisfied, score < 0.7 -> unsatisfied</small>
+    </article>
+  </div>
+
+  {% if result.decision_recommendations %}
+    {% for plan in result.decision_recommendations %}
+    <article style="padding: 16px; border: 1px solid var(--border-color); border-radius: var(--radius-md); margin-bottom: 12px; background: #ffffff; box-shadow: var(--shadow-sm);">
+      <h4 style="margin: 0 0 8px 0; color: var(--secondary);">PA{{ loop.index }}. {{ plan.title }}</h4>
+      <p style="margin: 0 0 8px 0; color: var(--text-secondary);">{{ plan.description }}</p>
+      <p style="margin: 0; color: var(--text-secondary);"><strong>Lý do đề xuất:</strong> {{ plan.reason if plan.reason else 'Đề xuất theo mức độ hài lòng tổng hợp.' }}</p>
+    </article>
+    {% endfor %}
+  {% endif %}
+</section>
+{% endif %}
+{% endblock %}

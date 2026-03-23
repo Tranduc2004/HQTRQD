@@ -1,148 +1,235 @@
-# GIAI ĐOẠN 6: PHÁT TRIỂN SẢN PHẨM WEB DSS
-# Hướng dẫn chạy Web Application
+# Tai Lieu Du An Web DSS Danh Gia Hai Long Hanh Khach Hang Khong
 
-## Cài đặt thư viện
+## 1) Tong quan du an
 
-Trước khi chạy ứng dụng, cần cài đặt các thư viện sau:
+Du an xay dung he thong ho tro ra quyet dinh (Decision Support System - DSS) danh gia muc do hai long hanh khach hang khong. Giai phap ket hop:
 
-```bash
-pip install streamlit plotly
+- Mo hinh hoc may XGBoost de du doan hai long/khong hai long.
+- AHP (Analytic Hierarchy Process) de xep uu tien tieu chi va ho tro de xuat phuong an hanh dong.
+- Lop ung dung Web cho nguoi dung cuoi (khach hang) va quan tri vien.
+
+Muc tieu chinh:
+
+- Thu thap danh gia dich vu theo hang ve.
+- Du doan trang thai hai long theo thoi gian gan thuc.
+- Tinh diem rui ro va xac dinh cac tieu chi can cai thien.
+- Ho tro quan tri vien phan tich xu huong va de xuat quyet dinh.
+
+## 2) Pham vi va thanh phan
+
+Du an bao gom 2 lop ung dung:
+
+- Ung dung Flask UI: giao dien web chinh, luu feedback vao PostgreSQL, dashboard quan tri.
+- Ung dung Streamlit (prototype/bo sung): trinh bay DSS va dashboard theo huong data app.
+
+Thanh phan nghiep vu chinh:
+
+- Phan he du doan hai long theo tung hang ve (Business, Economy, Eco Plus).
+- Phan he tinh impact ket hop XGBoost + AHP.
+- Phan he goi y khuyen nghi theo muc do hai long va tieu chi uu tien.
+- Phan he quan tri thong ke, xem chi tiet feedback, va decision support.
+
+## 3) Cong nghe su dung
+
+- Backend web: Flask
+- Data app: Streamlit
+- Machine Learning: XGBoost, scikit-learn
+- Tinh toan du lieu: pandas, numpy
+- Truc quan hoa: Plotly
+- Co so du lieu: PostgreSQL (qua psycopg2)
+
+Danh sach thu vien duoc khai bao tai `requirements.txt`.
+
+## 4) Cau truc thu muc
+
+```
+HHTRQD/
+|- app.py                         # Streamlit app (giao dien thay the/bo sung)
+|- recommendation_engine.py       # Logic xep hang va sinh khuyen nghi
+|- requirements.txt               # Danh sach thu vien Python
+|- database.sql                   # File SQL (hien dang de trong)
+|- Data/
+|  |- train.csv
+|  |- test.csv
+|- flask_ui/
+|  |- app_flask.py                # Flask app chinh
+|  |- static/
+|  |  |- styles.css
+|  |- templates/
+|     |- home.html
+|     |- survey.html
+|     |- dashboard.html
+|     |- admin_login.html
+|     |- admin_feedback_list.html
+|     |- admin_feedback_detail.html
+|     |- admin_decision_support.html
+|     |- admin_model_stats.html
+|     |- calculation_steps.html
+|     |- about.html
+|- *.ipynb                        # Notebook huan luyen mo hinh, AHP, tich hop DSS
 ```
 
-## Chạy ứng dụng
+## 5) Kien truc tong the
 
-Mở terminal/command prompt trong thư mục dự án và chạy lệnh:
+Luong xu ly tong quan:
+
+1. Nguoi dung nhap danh gia tai trang survey.
+2. He thong tao vector dac trung theo hang ve.
+3. DSS du doan hai long, tinh confidence va risk score.
+4. DSS tinh impact tieu chi (ket hop feature importance + AHP weight).
+5. Engine tao danh sach khuyen nghi theo muc do uu tien.
+6. Ket qua luu vao bang `feedback_submissions` trong PostgreSQL.
+7. Quan tri vien theo doi dashboard va decision support.
+
+## 6) Co so du lieu
+
+Ung dung Flask tu khoi tao bang neu chua ton tai:
+
+- `feedback_submissions`: luu ban ghi danh gia, ket qua du doan, thong tin file upload.
+- `admin_users`: tai khoan quan tri.
+
+Tai khoan fallback trong code:
+
+- Username mac dinh: `admin`
+- Password mac dinh: `admin123`
+
+Luu y bao mat: can doi thong tin dang nhap bang bien moi truong khi trien khai that.
+
+## 7) Yeu cau dau vao mo hinh
+
+De DSS day du, du an can cac artifact da huan luyen (tao tu notebook):
+
+- `business_xgboost_optimized.pkl`
+- `economy_xgboost_optimized.pkl`
+- `ecoplus_xgboost_optimized.pkl`
+- `ahp_weights_all_classes.pkl`
+- `airline_dss_system.pkl` (tuy chon fallback)
+
+Neu thieu artifact, can chay cac notebook huan luyen/tich hop trong du an.
+
+## 8) Huong dan cai dat va chay
+
+### 8.1 Cai dat moi truong
+
+```bash
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+### 8.2 Cau hinh PostgreSQL (khuyen nghi)
+
+Co the dat bien moi truong:
+
+```bash
+set PGHOST=localhost
+set PGPORT=5432
+set PGDATABASE=airline
+set PGUSER=postgres
+set PGPASSWORD=123
+```
+
+Them bien moi truong bao mat cho Flask:
+
+```bash
+set FLASK_SECRET_KEY=your_secret_key
+set AIRLINE_ADMIN_USER=admin
+set AIRLINE_ADMIN_PASS=strong_password
+```
+
+### 8.3 Chay Flask UI (khuyen nghi cho san pham web)
+
+```bash
+python flask_ui/app_flask.py
+```
+
+Truy cap: `http://localhost:8502`
+
+### 8.4 Chay Streamlit app (neu can)
 
 ```bash
 streamlit run app.py
 ```
 
-Ứng dụng sẽ tự động mở trong trình duyệt tại địa chỉ: http://localhost:8501
+Mac dinh truy cap: `http://localhost:8501`
 
-## Cấu trúc Web Application
+## 9) Chuc nang theo vai tro
 
-### 1. 🏠 Trang chủ (Home)
-- Giới thiệu tổng quan về hệ thống
-- Hiển thị trạng thái DSS và AHP
-- Thống kê nhanh về các đánh giá
+### 9.1 Khach hang
 
-### 2. 📝 Form đánh giá (Customer Form)
-**Chức năng:**
-- Chọn hạng vé (Business/Economy/Eco Plus)
-- Nhập tên hành khách (tùy chọn)
-- Đánh giá 6 tiêu chí dịch vụ (thang điểm 1-5)
-- Gửi dữ liệu về backend
+- Truy cap trang `survey`.
+- Chon hang ve va nhap diem danh gia cac tieu chi.
+- Nhan ket qua:
+  - Du doan hai long/khong hai long.
+  - Do tin cay du doan.
+  - Risk score va muc rui ro.
+  - Top tieu chi anh huong.
+  - Goi y hanh dong uu tien.
 
-**Kết quả nhận được:**
-- Dự đoán mức độ hài lòng (Satisfied/Dissatisfied)
-- Độ tin cậy của dự đoán
-- Điểm rủi ro (Risk Score)
-- Phân tích tác động của từng tiêu chí
-- Khuyến nghị cải thiện
+### 9.2 Quan tri vien
 
-### 3. 📊 Dashboard quản trị (Admin Dashboard)
-**Tab Overview:**
-- KPI metrics (tổng đánh giá, tỷ lệ hài lòng, điểm rủi ro trung bình)
-- Biểu đồ phân bố hài lòng theo hạng vé
-- Phân bố mức độ rủi ro
-- Timeline xu hướng theo thời gian
+- Dang nhap qua trang `admin/login`.
+- Theo doi dashboard KPI tong hop.
+- Xem danh sach feedback va chi tiet tung feedback.
+- Theo doi decision support (PA1/PA2/PA3).
+- Xem thong ke model (hardcoded tu notebook).
 
-**Tab XGBoost Results:**
-- Phân bố độ tin cậy của mô hình
-- Điểm rủi ro theo hạng vé
-- Ma trận dự đoán
+## 10) Danh sach route Flask chinh
 
-**Tab AHP Weights:**
-- Trọng số AHP theo từng hạng vé
-- Top 3 ưu tiên cho mỗi hạng
-- Consistency Ratio (CR)
+- `/`: Trang chu
+- `/survey`: Form danh gia khach hang
+- `/about`: Gioi thieu he thong
+- `/calculation-steps`: Trinh bay cac buoc tinh AHP
+- `/admin/login`: Dang nhap quan tri
+- `/admin/logout`: Dang xuat
+- `/admin/dashboard`: Dashboard KPI
+- `/admin/feedback`: Danh sach feedback
+- `/admin/feedback/<id>`: Chi tiet feedback + AHP decision support
+- `/admin/decision-support`: Tong hop de xuat quyet dinh
+- `/admin/model_stats`: Thong ke mo hinh
 
-**Tab Alerts:**
-- Danh sách hành khách có rủi ro cao
-- Cảnh báo theo mức độ (HIGH/MEDIUM/LOW)
-- Chi tiết đánh giá của từng hành khách
+## 11) Luong nghiep vu decision support
 
-### 4. ℹ️ Giới thiệu hệ thống (About System)
-- Kiến trúc hệ thống (6 giai đoạn)
-- Hiệu suất mô hình
-- Hướng dẫn sử dụng
-- Thông tin kỹ thuật
+He thong xay dung goi y theo 3 phuong an (PA):
 
-## Tính năng nổi bật
+- `PA1`: Duy tri/Cai thien chat luong dich vu
+- `PA2`: Chuong trinh khach hang than thiet
+- `PA3`: De xuat nang hang
 
-✅ **Real-time Analysis**: Phân tích ngay lập tức khi submit form
-✅ **Interactive Dashboard**: Biểu đồ tương tác với Plotly
-✅ **Risk Assessment**: Đánh giá rủi ro tự động
-✅ **Export Data**: Xuất dữ liệu CSV cho báo cáo
-✅ **Session Management**: Lưu trữ đánh giá trong session
-✅ **Responsive Design**: Giao diện thân thiện, dễ sử dụng
+Trong moi feedback chi tiet, he thong:
 
-## Lưu ý quan trọng
+1. Chuan hoa diem cac tieu chi.
+2. Tao ma tran cap doi AHP.
+3. Tinh vector trong so va kiem tra CR (Consistency Ratio).
+4. Cham diem PA theo tieu chi.
+5. Chon PA toi uu dua tren tong diem co trong so.
 
-1. **Yêu cầu file trước khi chạy:**
-   - `airline_dss_system.pkl` - Hệ thống DSS đã train (từ Stage 5)
-   - `ahp_weights_all_classes.pkl` - Trọng số AHP (từ Stage 4)
+## 12) Troubleshooting nhanh
 
-2. **Chạy các notebook trước:**
-   - Nếu thiếu file, cần chạy:
-     - `index.ipynb` - Business model
-     - `ecoclass.ipynb` - Economy model
-     - `ecoplusclass.ipynb` - Eco Plus model
-     - `ahp_analysis.ipynb` - AHP weights
-     - `dss_integration.ipynb` - DSS system
+1. Loi khong du doan duoc DSS:
+   - Kiem tra cac file `.pkl` da ton tai dung ten.
+   - Chay lai cac notebook huan luyen va tich hop.
 
-3. **Dữ liệu test:**
-   - Cần file `Data/test.csv` để load dữ liệu mẫu
+2. Loi ket noi PostgreSQL:
+   - Kiem tra service PostgreSQL dang chay.
+   - Kiem tra bien moi truong `PG*`.
+   - Kiem tra tai khoan co quyen tao bang.
 
-## Quy trình sử dụng đầy đủ
+3. Dashboard trong:
+   - Thu submit it nhat 1 feedback tai `/survey`.
 
-### Cho khách hàng:
-1. Mở app → Chọn "Customer Form"
-2. Chọn hạng vé của bạn
-3. Đánh giá 6 tiêu chí (di chuyển slider)
-4. Click "Submit Evaluation"
-5. Xem kết quả dự đoán và khuyến nghị
+4. Khong dang nhap duoc admin:
+   - Kiem tra bang `admin_users`.
+   - Neu can, su dung fallback account theo bien moi truong.
 
-### Cho quản trị viên:
-1. Mở app → Chọn "Admin Dashboard"
-2. Xem KPI metrics tổng quan
-3. Phân tích tab "Overview" - xu hướng
-4. Kiểm tra tab "XGBoost Results" - hiệu suất mô hình
-5. Xem tab "AHP Weights" - độ ưu tiên tiêu chí
-6. Theo dõi tab "Alerts" - hành khách rủi ro cao
-7. Download CSV để báo cáo
+## 13) Huong phat trien tiep
 
-## Troubleshooting
+- Ma hoa mat khau admin (bcrypt/argon2) thay vi luu plain text.
+- Tach cau hinh ra file `.env` va bo sung quan ly secret.
+- Bo sung migration DB (Alembic/Flyway).
+- Viet test tu dong cho route va pipeline DSS.
+- Dong bo ten class `Eco`/`Eco Plus` de tranh sai lech trong bao cao.
 
-**Lỗi: "DSS system not found"**
-- Chạy `dss_integration.ipynb` để tạo file `airline_dss_system.pkl`
+## 14) Ket luan
 
-**Lỗi: "AHP weights not found"**
-- Chạy `ahp_analysis.ipynb` để tạo file `ahp_weights_all_classes.pkl`
-
-**Lỗi: "No submissions yet"**
-- Submit ít nhất 1 đánh giá ở "Customer Form" trước khi vào Dashboard
-
-**App không mở được:**
-- Kiểm tra đã cài streamlit: `pip install streamlit`
-- Kiểm tra đang ở đúng thư mục chứa `app.py`
-- Thử port khác: `streamlit run app.py --server.port 8502`
-
-## Mở rộng trong tương lai
-
-- 🔐 Thêm authentication cho admin
-- 💾 Lưu dữ liệu vào database
-- 📧 Gửi email cảnh báo tự động
-- 📱 Phiên bản mobile-responsive
-- 🌐 Multi-language support
-- 📊 Thêm biểu đồ nâng cao
-- 🤖 Chatbot hỗ trợ
-
-## Kết luận
-
-Web application này hoàn thành Stage 6 của dự án, cung cấp:
-- ✅ Form thu thập dữ liệu từ khách hàng
-- ✅ Dashboard hỗ trợ ra quyết định cho quản trị viên
-- ✅ Tích hợp đầy đủ XGBoost + AHP
-- ✅ Giao diện thân thiện, dễ sử dụng
-- ✅ Sẵn sàng triển khai thực tế
+Du an da co mot nen tang DSS web kha day du cho bai toan danh gia hai long hanh khach, ket hop mo hinh du doan va AHP de chuyen du lieu phan hoi thanh hanh dong uu tien cho quan tri vien. Tai lieu nay co the dung lam baseline cho bao cao do an, ban giao ky thuat, va mo rong he thong trong cac giai doan tiep theo.

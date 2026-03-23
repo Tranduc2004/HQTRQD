@@ -22,21 +22,21 @@
       <!-- Section 1: KPI -->
       <div class="grid" style="grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 30px;">
         <div class="card" style="padding: 20px; text-align: center; border: 1px solid var(--border-color); background: var(--surface);">
-          <div style="font-size: 14px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;" title="Tỷ lệ dự đoán đúng trên tập Test và Train">Accuracy</div>
+          <div style="font-size: 14px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;" title="Tỷ lệ dự đoán đúng trên tập Test và Train">Độ chính xác (Accuracy)</div>
           <div style="font-size: 32px; font-weight: 700; color: var(--primary); margin: 10px 0;">{{ data.kpi.acc_test }}%</div>
-          <div style="font-size: 13px; color: var(--text-secondary);">Train: {{ data.kpi.acc_train }}% | Overfitting gap: {{ data.kpi.gap }}%</div>
+          <div style="font-size: 13px; color: var(--text-secondary);">Huấn luyện: {{ data.kpi.acc_train }}% | Khoảng cách: {{ data.kpi.gap }}%</div>
         </div>
         
         <div class="card" style="padding: 20px; text-align: center; border: 1px solid var(--border-color); background: var(--surface);">
           <div style="font-size: 14px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;" title="Tỷ lệ nhận diện đúng từng class">Precision & Recall</div>
           <div style="font-size: 32px; font-weight: 700; color: var(--accent); margin: 10px 0;">{{ data.kpi.precision }}%</div>
-          <div style="font-size: 13px; color: var(--text-secondary);">Rec Sat: {{ data.kpi.recall_sat }}% | Rec N/D: {{ data.kpi.recall_nd }}%</div>
+          <div style="font-size: 13px; color: var(--text-secondary);">Bao phủ HL: {{ data.kpi.recall_sat }}% | Bao phủ KHL: {{ data.kpi.recall_nd }}%</div>
         </div>
         
         <div class="card" style="padding: 20px; text-align: center; border: 1px solid var(--border-color); background: var(--surface);">
-          <div style="font-size: 14px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;" title="Trung bình điều hòa giữa Precision và Recall">Best F1-Score</div>
+          <div style="font-size: 14px; color: var(--text-muted); font-weight: 600; text-transform: uppercase;" title="Trung bình điều hòa giữa Precision và Recall">Điểm F1 tốt nhất</div>
           <div style="font-size: 32px; font-weight: 700; color: #8b5cf6; margin: 10px 0;">{{ data.kpi.f1 }}</div>
-          <div style="font-size: 13px; color: var(--danger);">False Negative (Bỏ lọt rủi ro): {{ data.kpi.fn }} cases</div>
+          <div style="font-size: 13px; color: var(--danger);">Dự báo sót rủi ro (FN): {{ data.kpi.fn }} lượt</div>
         </div>
         
         <div class="card" style="padding: 20px; text-align: center; border: 1px solid var(--border-color); background: var(--surface);">
@@ -54,14 +54,14 @@
             <!-- Grid -->
             <div style="display: grid; grid-template-columns: 80px 100px 100px; gap: 5px; text-align: center; font-family: 'Inter'; font-size: 14px;">
               <div></div>
-              <div style="font-weight: 600; padding: 8px;">Pred N/D</div>
-              <div style="font-weight: 600; padding: 8px;">Pred Sat</div>
+              <div style="font-weight: 600; padding: 8px;">Dự báo KHL</div>
+              <div style="font-weight: 600; padding: 8px;">Dự báo HL</div>
               
-              <div style="font-weight: 600; display: flex; align-items: center; justify-content:flex-end; padding-right:10px;">True N/D</div>
+              <div style="font-weight: 600; display: flex; align-items: center; justify-content:flex-end; padding-right:10px;">Thực tế KHL</div>
               <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: #047857; padding: 15px; border-radius: 8px; font-weight: 700; font-size: 18px;" title="True Negative">TN: {{ data.cm.tn }}</div>
               <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid #fca5a5; color: #b91c1c; padding: 15px; border-radius: 8px; font-weight: 700; font-size: 18px;" title="False Positive">FP: {{ data.cm.fp }}</div>
               
-              <div style="font-weight: 600; display: flex; align-items: center; justify-content:flex-end; padding-right:10px;">True Sat</div>
+              <div style="font-weight: 600; display: flex; align-items: center; justify-content:flex-end; padding-right:10px;">Thực tế HL</div>
               <div style="background: rgba(239, 68, 68, 0.2); border: 2px solid #ef4444; color: #991b1b; padding: 15px; border-radius: 8px; font-weight: 700; font-size: 20px;" title="False Negative (Nhầm rủi ro thành hài lòng) - CRITICAL">FN: {{ data.cm.fn }}</div>
               <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid #10b981; color: #047857; padding: 15px; border-radius: 8px; font-weight: 700; font-size: 18px;" title="True Positive">TP: {{ data.cm.tp }}</div>
             </div>
@@ -139,11 +139,11 @@
               <td style="text-align: center; font-weight: 600;">{{ imp }}%</td>
               <td style="text-align: center;">
                 {% if imp >= 15 %}
-                  <span style="background: rgba(239, 68, 68, 0.1); color: #b91c1c; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 600;">HIGH</span>
+                  <span style="background: rgba(239, 68, 68, 0.1); color: #b91c1c; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 600;">CAO</span>
                 {% elif imp >= 10 %}
-                  <span style="background: rgba(245, 158, 11, 0.1); color: #b45309; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 600;">MEDIUM</span>
+                  <span style="background: rgba(245, 158, 11, 0.1); color: #b45309; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 600;">TRUNG BÌNH</span>
                 {% else %}
-                  <span style="background: rgba(16, 185, 129, 0.1); color: #047857; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 600;">LOW</span>
+                  <span style="background: rgba(16, 185, 129, 0.1); color: #047857; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 600;">THẤP</span>
                 {% endif %}
               </td>
               <td style="text-align: center;">
@@ -162,16 +162,16 @@
       <!-- Section 4 & 5: Threshold Optimization & Comparison -->
       <div class="grid-2">
         <div class="card" style="border: 1px solid var(--border-color); background: var(--surface);">
-          <h4 style="font-size: 18px; margin-bottom: 20px;" title="Tối ưu hóa ngưỡng phân loại mục tiêu là giảm thiểu False Negative"><span class="material-symbols-rounded">show_chart</span> Threshold Optimization</h4>
+          <h4 style="font-size: 18px; margin-bottom: 20px;" title="Tối ưu hóa ngưỡng phân loại mục tiêu là giảm thiểu False Negative"><span class="material-symbols-rounded">show_chart</span> Tối ưu hóa Ngưỡng</h4>
           <div style="height: 250px;">
             <canvas id="lineChart{{ cls|replace(' ', '') }}"></canvas>
           </div>
           <div style="background: var(--bg-color); padding: 15px; border-radius: 8px; margin-top: 15px; border-left: 4px solid var(--primary);">
-            <h5 style="margin-bottom: 10px;">Best Threshold: <strong>{{ data.threshold.best }}</strong></h5>
+            <h5 style="margin-bottom: 10px;">Ngưỡng tốt nhất: <strong>{{ data.threshold.best }}</strong></h5>
             <div style="display: flex; justify-content: space-between; font-size: 14px;">
               <span>F1: <strong>{{ data.threshold.f1 }}</strong></span>
-              <span>Precision: <strong>{{ data.threshold.precision }}%</strong></span>
-              <span>FN Cases: <strong style="color: var(--danger);">{{ data.threshold.fn }}</strong></span>
+              <span>Độ chính xác: <strong>{{ data.threshold.precision }}%</strong></span>
+              <span>Số ca FN: <strong style="color: var(--danger);">{{ data.threshold.fn }}</strong></span>
             </div>
           </div>
         </div>
@@ -182,8 +182,8 @@
             <thead>
               <tr>
                 <th>Chỉ số</th>
-                <th>Original</th>
-                <th>Optimized</th>
+                <th>Nguyên bản</th>
+                <th>Tối ưu</th>
                 <th>Hệ quả</th>
               </tr>
             </thead>

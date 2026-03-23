@@ -130,7 +130,7 @@
 </style>
 
 <section class="hero dss-admin-hero">
-  <h2>Decision Support Strategy (Admin)</h2>
+  <h2>Chiến lược Hỗ trợ Quyết định (Quản trị)</h2>
   <p>Trang hỗ trợ quản trị viên lựa chọn chiến lược xử lý sau khi hệ thống phân tích phản hồi khách hàng bằng AHP và mô hình AI.</p>
 </section>
 
@@ -142,8 +142,8 @@
 {% else %}
 <section class="kpi-row">
   <div class="kpi"><span>Tổng phản hồi đã phân tích</span><strong>{{ metrics.total }}</strong></div>
-  <div class="kpi"><span>Nhóm satisfied</span><strong style="color: #16a34a;">{{ metrics.sat }}</strong></div>
-  <div class="kpi"><span>Nhóm unsatisfied</span><strong style="color: #dc2626;">{{ metrics.unsat }}</strong></div>
+  <div class="kpi"><span>Nhóm Hài lòng</span><strong style="color: #16a34a;">{{ metrics.sat }}</strong></div>
+  <div class="kpi"><span>Nhóm Không hài lòng</span><strong style="color: #dc2626;">{{ metrics.unsat }}</strong></div>
   <div class="kpi"><span>Điểm hài lòng trung bình</span><strong>{{ '%.2f'|format(metrics.avg_score) }}</strong></div>
 </section>
 
@@ -161,7 +161,7 @@
         </div>
       </div>
       <div class="level-chip {{ 'sat' if row.level == 'satisfied' else 'unsat' }}">
-        {{ row.level }} ({{ '%.2f'|format(row.score) }})
+        {{ 'HÀI LÒNG' if row.level == 'satisfied' else 'KHÔNG HÀI LÒNG' }} ({{ '%.2f'|format(row.score) }})
       </div>
     </div>
 

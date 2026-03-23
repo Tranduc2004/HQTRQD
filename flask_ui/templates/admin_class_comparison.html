@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="admin-section">
+  <div class="admin-container">
+    <header class="admin-header">
+      <div class="header-content">
+        <span class="material-symbols-rounded header-icon">compare_arrows</span>
+        <div>
+          <h1>So sánh giữa các Hạng ghế</h1>
+          <p>Phân tích hiệu suất dịch vụ theo từng phân khúc khách hàng</p>
+        </div>
+      </div>
+      <div class="filter-bar">
+        <form method="GET" class="filter-form">
+          <label for="month">Tháng:</label>
+          <select name="month" id="month" onchange="this.form.submit()">
+            <option value="all" {% if selected_month == 'all' %}selected{% endif %}>Tất cả thời gian</option>
+            {% for m in months %}
+            <option value="{{ m }}" {% if selected_month == m %}selected{% endif %}>Tháng {{ m }}</option>
+            {% endfor %}
+          </select>
+        </form>
+      </div>
+    </header>
+
+    {% if not classes_data %}
+    <div class="empty-state">
+      <span class="material-symbols-rounded">sentiment_dissatisfied</span>
+      <p>Không có dữ liệu trong khoảng thời gian này.</p>
+    </div>
+    {% else %}
+
+    <!-- Section 2: KPI Cards -->
+    <div class="class-kpi-grid">
+      {% for cls, d in classes_data.items() %}
+      <div class="class-card">
+        <div class="class-title">{{ cls }}</div>
+        <div class="stat-main">
+          <div class="stat-val">{{ d.sat_rate }}%</div>
+          <div class="stat-label">Hài lòng</div>
+        </div>
+        <div class="stat-footer">
+          <div class="footer-item">
+            <span>Feedback</span>
+            <strong>{{ d.total }}</strong>
+          </div>
+          <div class="footer-item">
+            <span>Risk Avg</span>
+            <strong class="risk-text-{{ 'high' if d.avg_risk > 60 else ('medium' if d.avg_risk > 30 else 'low') }}">{{ d.avg_risk }}</strong>
+          </div>
+        </div>
+        <div class="pa-recommendation">
+          <label>PA tối ưu chung:</label>
+          <div class="pa-badge pa-{{ d.best_pa|lower }}">{{ d.best_pa }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Section 3 & 5: Radar & Insights -->
+    <div class="comparison-row">
+      <div class="radar-box">
+        <h3>So sánh các Tiêu chí Dịch vụ</h3>
+        <div id="classRadarChart" style="height: 450px;"></div>
+      </div>
+      <div class="insights-box">
+        <h3>Nhận xét Hệ thống (AI Insights)</h3>
+        <div class="insights-list">
+          {% set sorted_classes = classes_data.items()|sort(attribute='1.sat_rate', reverse=True) %}
+          <div class="insight-card pos">
+            <span class="material-symbols-rounded">trending_up</span>
+            <p>Hạng <strong>{{ sorted_classes[0][0] }}</strong> đang có tỷ lệ hài lòng cao nhất ({{ sorted_classes[0][1].sat_rate }}%).</p>
+          </div>
+          
+          {% set worst_risk = classes_data.items()|sort(attribute='1.avg_risk', reverse=True) %}
+          <div class="insight-card neg">
+            <span class="material-symbols-rounded">warning</span>
+            <p>Hạng <strong>{{ worst_risk[0][0] }}</strong> cần được chú ý do có chỉ số rủi ro trung bình cao ({{ worst_risk[0][1].avg_risk }}).</p>
+          </div>
+
+          <div class="insight-card info">
+            <span class="material-symbols-rounded">lightbulb</span>
+            {% set low_feats = [] %}
+            {% for f in common_features %}
+              {% set ns = namespace(low_count=0) %}
+              {% for cls, d in classes_data.items() %}
+                {% if d.criteria.get(f, 5) < 3.2 %}
+                  {% set ns.low_count = ns.low_count + 1 %}
+                {% endif %}
+              {% endfor %}
+              {% if ns.low_count >= 2 %}
+                {% set _ = low_feats.append(feature_vi.get(f, f)) %}
+              {% endif %}
+            {% endfor %}
+            <p>Tiêu chí <strong>{{ low_feats|join(', ') if low_feats else 'Các tiêu chí đều ổn định' }}</strong> đang có điểm thấp ở nhiều hạng ghế.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 4: Detailed Table -->
+    <div class="table-box">
+      <h3>Bảng so sánh chi tiết điểm trung bình (Heatmap)</h3>
+      <div class="table-responsive">
+        <table class="heatmap-table">
+          <thead>
+            <tr>
+              <th>Tiêu chí</th>
+              {% for cls in classes_data.keys() %}
+              <th>{{ cls }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for f in common_features %}
+            <tr>
+              <td class="feat-name">{{ feature_vi.get(f, f) }}</td>
+              {% for cls, d in classes_data.items() %}
+              {% set val = d.criteria.get(f) %}
+              <td class="cell-val {{ 'c-red' if val < 3.0 else ('c-yellow' if val < 3.5 else 'c-green') if val else 'c-empty' }}">
+                {{ '%.2f'|format(val) if val else '-' }}
+              </td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+            <tr class="pa-row">
+              <td><strong>Phương án tối ưu</strong></td>
+              {% for cls, d in classes_data.items() %}
+              <td><span class="pa-badge pa-{{ d.best_pa|lower }}">{{ d.best_pa }}</span></td>
+              {% endfor %}
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {% endif %}
+  </div>
+</section>
+
+<style>
+.class-kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 25px; }
+.class-card { background: #1e293b; border-radius: 16px; padding: 20px; border: 1px solid rgba(255,255,255,0.08); transition: 0.3s; }
+.class-card:hover { transform: translateY(-5px); border-color: rgba(99,102,241,0.4); box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+.class-title { font-size: 18px; font-weight: 700; color: #818cf8; margin-bottom: 15px; }
+.stat-main { margin-bottom: 20px; }
+.stat-val { font-size: 32px; font-weight: 800; color: #f8fafc; }
+.stat-label { font-size: 13px; color: #64748b; }
+.stat-footer { display: flex; gap: 20px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 15px; margin-bottom: 15px; }
+.footer-item { display: flex; flex-direction: column; }
+.footer-item span { font-size: 11px; color: #64748b; margin-bottom: 4px; }
+.footer-item strong { font-size: 15px; color: #cbd5e1; }
+
+.pa-recommendation label { display: block; font-size: 11px; color: #64748b; margin-bottom: 6px; }
+.pa-badge { display: inline-block; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; }
+.pa-pa1 { background: rgba(99,102,241,0.15); color: #818cf8; border: 1px solid rgba(99,102,241,0.3); }
+.pa-pa2 { background: rgba(139,92,246,0.15); color: #a78bfa; border: 1px solid rgba(139,92,246,0.3); }
+.pa-pa3 { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
+
+.comparison-row { display: grid; grid-template-columns: 1.5fr 1fr; gap: 25px; margin-top: 30px; }
+.radar-box, .insights-box, .table-box { background: #1e293b; border-radius: 16px; padding: 20px; border: 1px solid rgba(255,255,255,0.08); }
+.radar-box h3, .insights-box h3, .table-box h3 { font-size: 16px; color: #f1f5f9; margin-bottom: 20px; border-left: 3px solid #6366f1; padding-left: 10px; }
+
+.insight-card { display: flex; gap: 12px; padding: 15px; border-radius: 12px; margin-bottom: 12px; align-items: flex-start; }
+.insight-card p { margin: 0; font-size: 14px; line-height: 1.4; }
+.insight-card.pos { background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2); }
+.insight-card.pos span { color: #10b981; }
+.insight-card.neg { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); }
+.insight-card.neg span { color: #ef4444; }
+.insight-card.info { background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.2); }
+.insight-card.info span { color: #3b82f6; }
+
+.heatmap-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+.heatmap-table th { padding: 12px; text-align: left; background: rgba(255,255,255,0.03); color: #94a3b8; font-size: 12px; text-transform: uppercase; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.heatmap-table td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 14px; }
+.feat-name { color: #cbd5e1; font-weight: 500; }
+.cell-val { text-align: center; font-weight: 700; width: 100px; }
+.c-red { color: #fca5a5; background: rgba(239,68,68,0.1); }
+.c-yellow { color: #fde047; background: rgba(234,179,8,0.1); }
+.c-green { color: #6ee7b7; background: rgba(16,185,129,0.1); }
+.pa-row { background: rgba(99,102,241,0.05); }
+
+.risk-text-high { color: #ef4444; }
+.risk-text-medium { color: #f59e0b; }
+.risk-text-low { color: #10b981; }
+
+.filter-bar select { background: #334155; border: 1px solid rgba(255,255,255,0.1); color: white; padding: 8px 15px; border-radius: 8px; outline: none; }
+</style>
+
+<script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+<script>
+window.onload = function() {
+    const radarRaw = {{ radar_data|tojson }};
+    const commonFeatures = {{ common_features|tojson }};
+    const featureVi = {{ feature_vi|tojson }};
+    
+    // Map features to their Vietnamese labels
+    const labels = commonFeatures.map(f => featureVi[f] || f);
+
+    const data = radarRaw.map(d => {
+        return {
+            type: 'scatterpolar',
+            r: d.values.concat(d.values[0]), // Close the radar loop
+            theta: labels.concat(labels[0]),
+            fill: 'toself',
+            name: d.name
+        };
+    });
+
+    const layout = {
+        polar: {
+            radialaxis: { visible: true, range: [0, 5], color: '#64748b' },
+            bgcolor: 'transparent',
+            gridcolor: 'rgba(255,255,255,0.1)'
+        },
+        showlegend: true,
+        paper_bgcolor: 'transparent',
+        plot_bgcolor: 'transparent',
+        font: { color: '#94a3b8' },
+        margin: { t: 40, b: 40, l: 40, r: 40 }
+    };
+
+    Plotly.newPlot('classRadarChart', data, layout, { displayModeBar: false });
+};
+</script>
+
+{% endblock %}

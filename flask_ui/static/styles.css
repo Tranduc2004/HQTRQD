@@ -660,3 +660,19 @@ table.dataTable tbody tr:hover td {
   background: var(--surface-hover) !important;
   color: var(--text-primary) !important;
 }
+
+/* Utility Classes */
+.text-accent { color: var(--accent) !important; }
+.text-danger { color: var(--danger) !important; }
+.text-primary { color: var(--primary) !important; }
+.text-success { color: #10B981 !important; }
+
+/* Dynamic visibility classes */
+.feature-group { display: none; opacity: 0; transition: opacity 0.3s ease; }
+.feature-group.active { display: block; opacity: 1; }
+
+.badge-sat { background: rgba(16, 185, 129, 0.1); color: #047857; }
+.badge-unsat { background: rgba(239, 68, 68, 0.1); color: #b91c1c; }
+.badge-risk-high { background: var(--danger); color: white; }
+.badge-risk-medium { background: #f59e0b; color: white; }
+.badge-risk-low { background: var(--accent); color: white; }

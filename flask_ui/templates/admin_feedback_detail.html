@@ -190,6 +190,11 @@
     background: rgba(239, 68, 68, 0.22);
   }
 
+  .chip.neutral {
+    color: #fbbf24;
+    background: rgba(251, 191, 36, 0.22);
+  }
+
   .kv-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
@@ -532,50 +537,143 @@
     font-size: 13px;
   }
 
-  .winner-title {
+  .winner {
+    background: rgba(99, 102, 241, 0.12);
+    border: 1px solid rgba(99, 102, 241, 0.32);
+    padding: 24px;
+    border-radius: 18px;
+    margin-top: 15px;
+  }
+
+  /* Sophisticated Conclusion Styles */
+  .analysis-section {
+    margin-bottom: 24px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  .analysis-section:last-child { border-bottom: none; margin-bottom: 0; }
+  
+  .analysis-title {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: 10px;
-    flex-wrap: wrap;
+    font-weight: 700;
+    font-size: 16px;
+    margin-bottom: 14px;
+    color: #a5b4fc;
   }
-
-  .winner-list {
-    margin: 8px 0 0;
-    padding-left: 18px;
-    color: #cbd5e1;
-    font-size: 13px;
-    line-height: 1.55;
-  }
-
-  .winner-actions {
+  
+  .metric-row {
     display: flex;
-    gap: 8px;
-    margin-top: 12px;
-    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
   }
+  .metric-label { width: 140px; font-size: 13px; color: var(--text-muted); }
+  .metric-progress-container {
+    flex-grow: 1;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .metric-progress { height: 100%; border-radius: 4px; transition: 1s ease; }
+  .metric-value { width: 50px; text-align: right; font-weight: 700; font-size: 13px; }
+  
+  .explanation-text {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 12px;
+    border-radius: 10px;
+    font-size: 13.5px;
+    line-height: 1.5;
+    margin-top: 10px;
+    border-left: 3px solid #6366f1;
+  }
+  
+  .impact-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-top: 10px;
+  }
+  .impact-table th { text-align: left; padding: 8px; color: var(--text-muted); border-bottom: 1px solid rgba(255,255,255,0.1); }
+  .impact-table td { padding: 10px 8px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+  
+  .tag-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .positive-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(16, 185, 129, 0.15);
+    color: #6ee7b7;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+  }
+  
+  .risk-formula {
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    background: #000;
+    padding: 12px;
+    border-radius: 8px;
+    text-align: center;
+    letter-spacing: 0.5px;
+    margin-top: 10px;
+    color: #e2e8f0;
+  }
+  
+  .recommendation-box {
+    background: linear-gradient(to bottom right, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.1));
+    border: 1px dashed rgba(165, 180, 252, 0.4);
+    padding: 20px;
+    border-radius: 14px;
+  }
+  .rec-header { font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
+  .rec-bullet { margin-bottom: 12px; display: flex; gap: 10px; font-size: 14px; line-height: 1.6; }
+  
+  .risk-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 700;
+    font-size: 12px;
+    margin-left: 8px;
+  }
+  .risk-indicator.low { background: #064e3b; color: #10b981; }
+  .risk-indicator.medium { background: #451a03; color: #f59e0b; }
+  .risk-indicator.high { background: #450a0a; color: #ef4444; }
 
   .winner-btn {
     border: 1px solid rgba(99, 102, 241, 0.45);
     color: #e5e7eb;
     background: rgba(99, 102, 241, 0.12);
     border-radius: 8px;
-    padding: 8px 10px;
+    padding: 10px 14px;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 700;
+    transition: 0.3s;
   }
 
   .winner-btn:hover {
     background: rgba(99, 102, 241, 0.24);
+    transform: translateY(-2px);
   }
 
-  .winner {
-    border: 1px solid transparent;
-    background: linear-gradient(var(--bg-card), var(--bg-card)) padding-box, var(--accent-grad) border-box;
-    border-radius: 12px;
-    padding: 12px;
-    margin-top: 10px;
+  .winner-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+    flex-wrap: wrap;
   }
 
   .winner strong {
@@ -593,10 +691,16 @@
     border: 1px solid var(--border-soft);
     background: rgba(255, 255, 255, 0.03);
     color: #e5e7eb;
+    padding: 10px 18px;
     border-radius: 10px;
-    padding: 10px 14px;
     cursor: pointer;
+    font-size: 14px;
+    font-weight: 700;
   }
+
+  .text-success { color: #10b981 !important; }
+  .text-warning { color: #f59e0b !important; }
+  .text-danger { color: #ef4444 !important; }
 
   .nav-btn:hover {
     background: rgba(99, 102, 241, 0.18);
@@ -655,10 +759,16 @@
 
 <section class="ahp-page">
   <div class="ahp-top">
-    <a href="{{ url_for('admin_feedback_list') }}" class="back-link">
-      <span class="material-symbols-rounded" style="font-size: 18px;">arrow_back</span>
-      Quay lại danh sách phản hồi
-    </a>
+    <div style="display: flex; gap: 8px;">
+      <a href="{{ url_for('admin_whatif', feedback_id=ahp_data.feedback.id) }}" class="back-link" style="background: rgba(99, 102, 241, 0.1); border-color: rgba(99, 102, 241, 0.3); color: #818cf8;">
+        <span class="material-symbols-rounded" style="font-size: 18px;">science</span>
+        Mô phỏng What-if
+      </a>
+      <a href="{{ url_for('admin_feedback_list') }}" class="back-link">
+        <span class="material-symbols-rounded" style="font-size: 18px;">arrow_back</span>
+        Quay lại danh sách phản hồi
+      </a>
+    </div>
     <div class="ahp-title">
       <h2 style = "color: white;" >Chi tiết AHP phản hồi #{{ ahp_data.feedback.id }}</h2>
       <p>Quy trình 6 bước từ dữ liệu đánh giá đến đề xuất phương án quyết định.</p>
@@ -692,7 +802,7 @@
             <div class="kv"><div class="k">Hành khách</div><div class="v">{{ ahp_data.feedback.name }}</div></div>
             <div class="kv"><div class="k">Ngày giờ</div><div class="v">{{ ahp_data.feedback.date.strftime('%d/%m/%Y %H:%M') if ahp_data.feedback.date else '-' }}</div></div>
             <div class="kv"><div class="k">Loại ghế</div><div class="v">{{ ahp_data.feedback.seat_class }}</div></div>
-            <div class="kv"><div class="k">Trạng thái</div><div class="v"><span class="chip {{ 'sat' if ahp_data.feedback.satisfaction == 'satisfied' else 'unsat' }}">{{ ahp_data.feedback.satisfaction }}</span></div></div>
+            <div class="kv"><div class="k">Trạng thái</div><div class="v"><span class="chip {{ 'sat' if ahp_data.feedback.satisfaction == 'satisfied' else 'unsat' }}">{{ 'HÀI LÒNG' if ahp_data.feedback.satisfaction == 'satisfied' else 'KHÔNG HÀI LÒNG' }}</span></div></div>
             <div class="kv"><div class="k">Điểm AHP</div><div class="v">{{ '%.3f'|format(ahp_data.feedback.score) }}</div></div>
           </div>
 
@@ -778,7 +888,7 @@
             </thead>
             <tbody>
               <tr>
-                <th>Sum</th>
+                <th>Tổng (Sum)</th>
                 {% for sum_col in ahp_data.step3_column_sums %}
                 <td>{{ '%.3f'|format(sum_col) }}</td>
                 {% endfor %}
@@ -881,36 +991,38 @@
         </button>
         <div class="step-body">
           <div class="pa-intro-grid">
-            <article class="pa-intro-card pa1 {% if recommended == 'PA1' %}recommended{% endif %}">
-              {% if recommended == 'PA1' %}<span class="pa-badge">🏆 Được đề xuất</span>{% endif %}
+            {% for slot, pa_key in [('PA1', 'PA1'), ('PA2', 'PA2'), ('PA3', 'PA3')] %}
+            {% if pa_result and pa_key in pa_result %}
+            {% set pa = pa_result[pa_key] %}
+            <article class="pa-intro-card {{ pa_key|lower }} {% if pa_key == recommended %}recommended{% endif %}">
+              {% if pa_key == recommended %}
+              <span class="pa-badge">🏆 Đề xuất tối ưu</span>
+              {% endif %}
+              
               <div class="pa-head">
-                <span class="pa-icon">🛠️</span>
-                <div class="pa-title pa1">PA1 — {{ pa_titles['PA1'] }}</div>
+                <span class="pa-icon">{{ pa.icon }}</span>
+                <div class="pa-title {{ pa_key|lower }}">{{ pa_key }} — {{ pa.name }}</div>
               </div>
-              <p class="pa-desc">Tập trung nâng cao các tiêu chí vận hành cốt lõi: độ thoải mái ghế, vệ sinh cabin, thái độ tiếp viên, đúng giờ. Áp dụng khi khách hàng có điểm thấp ở các tiêu chí dịch vụ trực tiếp.</p>
-              <p class="pa-fit">✓ Phù hợp khi: Khách hàng unsatisfied với dịch vụ cơ bản</p>
-            </article>
+              <p class="pa-desc">{{ pa.desc }}</p>
+              <p class="pa-fit">✓ Áp dụng khi: {{ pa.apply_when }}</p>
 
-            <article class="pa-intro-card pa2 {% if recommended == 'PA2' %}recommended{% endif %}">
-              {% if recommended == 'PA2' %}<span class="pa-badge">🏆 Được đề xuất</span>{% endif %}
-              <div class="pa-head">
-                <span class="pa-icon">🎁</span>
-                <div class="pa-title pa2">PA2 — {{ pa_titles['PA2'] }}</div>
+              {% if final_scores and pa_key in final_scores %}
+              <div style="margin-top: 10px; font-size: 11px; color: #94a3b8; font-weight: 600;">
+                Điểm AHP: {{ (final_scores[pa_key]*100)|round(2) }}%
               </div>
-              <p class="pa-desc">Triển khai hoặc cải thiện chương trình tích điểm, ưu đãi miles, quà tặng cho hành khách thường xuyên. Giữ chân khách hàng bằng giá trị cộng thêm ngoài chuyến bay.</p>
-              <p class="pa-fit">✓ Phù hợp khi: Khách hàng trung tính hoặc satisfied nhưng cần gắn kết</p>
+              {% endif %}
             </article>
-
-            <article class="pa-intro-card pa3 {% if recommended == 'PA3' %}recommended{% endif %}">
-              {% if recommended == 'PA3' %}<span class="pa-badge">🏆 Được đề xuất</span>{% endif %}
-              <div class="pa-head">
-                <span class="pa-icon">⬆️</span>
-                <div class="pa-title pa3">PA3 — {{ pa_titles['PA3'] }}</div>
-              </div>
-              <p class="pa-desc">Gợi ý nâng hạng cho chuyến bay tiếp theo (Economy → Business, Business → First Class). Tận dụng trải nghiệm tích cực hiện tại để đề xuất mức dịch vụ cao hơn phù hợp hơn.</p>
-              <p class="pa-fit">✓ Phù hợp khi: Khách hàng satisfied, có tiềm năng nâng hạng</p>
-            </article>
+            {% endif %}
+            {% endfor %}
           </div>
+
+          <!-- Lý do đề xuất -->
+          {% if pa_result and pa_result.reasoning %}
+          <div style="margin-top: 20px; background: rgba(99, 102, 241, 0.1); border-left: 4px solid #6366f1; padding: 15px; border-radius: 8px;">
+            <strong style="color: #a5b4fc; display: block; margin-bottom: 5px;">📋 Lý do đề xuất:</strong>
+            <span style="font-size: 14px; color: #e2e8f0; line-height: 1.6;">{{ pa_result.reasoning }}</span>
+          </div>
+          {% endif %}
 
           {% for criterion, matrix in ahp_data.step6_alternatives.per_criterion.items() %}
           <div class="acc-item {% if loop.first %}open{% endif %}">
@@ -933,8 +1045,8 @@
           </div>
           {% endfor %}
 
-          {% set rec_key = recommended.lower() %}
-          {% set delta = (final_scores[recommended] - second_best_score) %}
+          {% set rec_key = recommended.lower() if recommended else 'pa1' %}
+          {% set delta = (final_scores.get(recommended, 0) - (second_best_score|default(0))) %}
           <table class="final-score">
             <thead>
               <tr>
@@ -958,9 +1070,9 @@
               <tr class="breakdown-total">
                 <th style="text-align: left;">Tổng điểm AHP</th>
                 <td>100%</td>
-                <td class="{% if recommended == 'PA1' %}recommended-col{% endif %}">{{ '%.3f'|format(final_scores['PA1']) }}</td>
-                <td class="{% if recommended == 'PA2' %}recommended-col{% endif %}">{{ '%.3f'|format(final_scores['PA2']) }}</td>
-                <td class="{% if recommended == 'PA3' %}recommended-col{% endif %}">{{ '%.3f'|format(final_scores['PA3']) }}</td>
+                <td class="{% if recommended == 'PA1' %}recommended-col{% endif %}">{{ '%.3f'|format(final_scores.get('PA1', 0)) }}</td>
+                <td class="{% if recommended == 'PA2' %}recommended-col{% endif %}">{{ '%.3f'|format(final_scores.get('PA2', 0)) }}</td>
+                <td class="{% if recommended == 'PA3' %}recommended-col{% endif %}">{{ '%.3f'|format(final_scores.get('PA3', 0)) }}</td>
               </tr>
             </tbody>
           </table>
@@ -984,24 +1096,163 @@
           </div>
 
           <div class="winner" id="ahpConclusion">
-            <div class="winner-title">
-              <strong>🏆 Kết luận: Hệ thống đề xuất {{ recommended }} — {{ pa_titles[recommended] }}</strong>
+            <div class="analysis-section">
+              <div class="analysis-title">📊 1. Chỉ số dự đoán từ XGBoost Model</div>
+              <div class="metric-row">
+                <div class="metric-label">Xác suất hài lòng</div>
+                <div class="metric-progress-container">
+                  <div class="metric-progress" style="width: {{ prob_satisfied|round(1) }}%; background: var(--sat);"></div>
+                </div>
+                <div class="metric-value">{{ prob_satisfied|round(1) }}%</div>
+              </div>
+              <div class="metric-row">
+                <div class="metric-label">Xác suất không HL</div>
+                <div class="metric-progress-container">
+                  <div class="metric-progress" style="width: {{ prob_dissatisfied|round(1) }}%; background: var(--unsat);"></div>
+                </div>
+                <div class="metric-value">{{ prob_dissatisfied|round(1) }}%</div>
+              </div>
+              <div class="metric-row">
+                <div class="metric-label">Ngưỡng phân loại</div>
+                <div style="flex-grow: 1; position: relative; height: 14px; font-size: 10px; color: var(--text-muted);">
+                   <div style="position: absolute; left: 60%; border-left: 1px dashed #fff; height: 100%; padding-left: 4px;">60% (Default)</div>
+                </div>
+                <div class="metric-value">60%</div>
+              </div>
+              <div class="explanation-text">
+                Kết quả: <span class="chip {{ 'sat' if ahp_data.feedback.satisfaction == 'satisfied' else 'unsat' }}">{{ ahp_data.feedback.satisfaction|upper }}</span><br>
+                {% if ahp_data.feedback.satisfaction == 'satisfied' %}
+                Mô hình dự đoán xác suất hài lòng đạt <strong>{{ prob_satisfied|round(1) }}%</strong>, vượt ngưỡng 60% → xếp vào nhóm <strong>Hài lòng</strong>.
+                {% else %}
+                Mô hình dự đoán xác suất hài lòng chỉ đạt <strong>{{ prob_satisfied|round(1) }}%</strong>, thấp hơn ngưỡng 60% → xếp vào nhóm <strong>Không hài lòng</strong>.
+                {% endif %}
+              </div>
             </div>
-            <div style="margin-top: 8px; color: var(--text-muted);">📊 Lý do dựa trên AHP:</div>
-            <ul class="winner-list">
-              <li>{{ recommended }} đạt điểm cao nhất ({{ '%.3f'|format(final_scores[recommended]) }}) sau khi nhân trọng số tất cả tiêu chí.</li>
-              <li>Vượt trội ở: {{ top_criteria[0] if top_criteria|length > 0 else '-' }}{% if top_criteria|length > 1 %} và {{ top_criteria[1] }}{% endif %} — trọng số {% if top_criteria|length > 0 %}{{ (breakdown[top_criteria[0]].weight * 100)|round(1) }}%{% else %}0%{% endif %}{% if top_criteria|length > 1 %} và {{ (breakdown[top_criteria[1]].weight * 100)|round(1) }}%{% endif %}.</li>
-              <li>Khoảng cách so với PA xếp 2: +{{ (delta * 100)|round(1) }}% → {% if delta > 0.10 %}Ưu thế rõ ràng{% elif delta > 0.05 %}Ưu thế nhẹ{% else %}Xấp xỉ{% endif %}.</li>
-            </ul>
-            <div style="margin-top: 8px; color: #fca5a5; font-weight: 700;">⚠️ Lưu ý cho quản trị viên:</div>
-            <ul class="winner-list">
-              <li>Khách hàng thuộc nhóm {{ ahp_data.feedback.satisfaction }}, điểm AHP: {{ '%.3f'|format(ahp_data.feedback.score) }}.</li>
-              {% if ahp_data.feedback.satisfaction == 'unsatisfied' %}
-              <li>Ưu tiên triển khai ngay trong chuyến bay tiếp theo.</li>
-              {% else %}
-              <li>Duy trì để giữ mức hài lòng hiện tại.</li>
-              {% endif %}
-            </ul>
+
+            {% if pull_down_criteria %}
+            <div class="analysis-section">
+              <div class="analysis-title">📉 2. Các tiêu chí "kéo xuống" (Ảnh hưởng tiêu cực)</div>
+              <table class="impact-table">
+                <thead>
+                  <tr>
+                    <th>Tiêu chí</th>
+                    <th>Điểm cho</th>
+                    <th>Ảnh hưởng</th>
+                    <th>Đánh giá</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for c in pull_down_criteria %}
+                  <tr>
+                    <td>{{ c.feature_vi }}</td>
+                    <td>{{ c.display_score }}</td>
+                    <td>{{ '%.1f'|format(c.impact_pct) }}%</td>
+                    <td class="text-{{ c.severity }}">{% if c.severity == 'danger' %}⚠️{% elif c.severity == 'warning' %}⚠️{% else %}✅{% endif %} {{ c.label }}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+              <div class="explanation-text" style="border-left-color: #ef4444;">
+                Hành khách đánh giá thấp <strong>{{ pull_down_criteria|length }}</strong> tiêu chí có mức ảnh hưởng quan trọng, đây là nguyên nhân chính dẫn đến sự không hài lòng.
+              </div>
+            </div>
+            {% endif %}
+
+            {% if positive_criteria %}
+            <div class="analysis-section">
+              <div class="analysis-title">✨ 3. Các điểm sáng (Được đánh giá tốt)</div>
+              <div class="tag-container">
+                {% for c in positive_criteria %}
+                <span class="positive-tag">{{ c.label if '✅' in c.label else '✅ ' + c.label }} {{ c.feature_vi }} ({{ c.display_score }})</span>
+                {% endfor %}
+              </div>
+              <div class="explanation-text" style="border-left-color: #10b981; font-size: 12px;">
+                Các tiêu chí này đang được đáp ứng tốt, cần duy trì để đảm bảo trải nghiệm khách hàng.
+              </div>
+            </div>
+            {% endif %}
+
+            <div class="analysis-section">
+              <div class="analysis-title">🛡️ 4. Chi tiết Risk Score (Chỉ số rủi ro rời bỏ)</div>
+              <div class="risk-formula">
+                 Risk = (Unsat Prob × 0.7) + (Weak Ratio × 0.3)<br>
+                 <span style="font-size: 12px; color: var(--text-muted);">
+                   = ({{ prob_dissatisfied|round(1) }}% × 0.7) + ({{ weak_ratio_percent|round(1) }}% × 0.3)
+                 </span><br>
+                 = <strong>{{ risk_score|round(1) }}</strong> 
+                 <span class="risk-indicator {{ risk_level|lower }}">
+                   {% if risk_score < 30 %}
+                   🟢 THẤP
+                   {% elif risk_score < 60 %}
+                   🟡 TRUNG BÌNH
+                   {% else %}
+                   🔴 CAO
+                   {% endif %}
+                 </span>
+              </div>
+              <div class="explanation-text" style="font-size: 12px;">
+                Mức rủi ro <strong>{% if risk_score < 30 %}Thấp{% elif risk_score < 60 %}Trung bình{% else %}Cao{% endif %}</strong>: 
+                {% if risk_score < 30 %}Dịch vụ khá ổn định, khách hàng có dấu hiệu trung thành.{% elif risk_score < 60 %}Cần theo dõi sát một số tiêu chí đang bị đánh giá tiêu cực.{% else %}Cần hành động khẩn cấp để ngăn chặn khách hàng rời bỏ dịch vụ.{% endif %}
+              </div>
+            </div>
+
+            <div class="analysis-section" style="border-bottom: none;">
+              <div class="recommendation-box">
+                <div class="rec-header">
+                   <span>🏆 Hệ thống đề xuất {{ recommended }}</span>
+                </div>
+                
+                {% if ahp_data.feedback.satisfaction == 'unsatisfied' %}
+                <div class="rec-bullet">
+                   <span>🚨</span>
+                   <div>
+                     <strong>Lý do khách hàng KHÔNG HÀI LÒNG:</strong><br>
+                     • Xác suất hài lòng chỉ đạt {{ prob_satisfied|round(1) }}% (dưới ngưỡng 70%)<br>
+                     • {{ pull_down_criteria|length }} tiêu chí bị đánh giá thấp dưới 3.5 điểm<br>
+                     {% if pull_down_criteria %}
+                     • Tiêu chí ảnh hưởng lớn nhất: <strong>{{ pull_down_criteria[0].feature_vi }}</strong> ({{ pull_down_criteria[0].score }}/5 — Impact: {{ pull_down_criteria[0].impact_pct|round(1) }}%)
+                     {% endif %}
+                   </div>
+                </div>
+                <div class="rec-bullet">
+                   <span>⚖️</span>
+                   <div>
+                     <strong>Lý do chọn {{ recommended }} thay vì PA khác:</strong><br>
+                     • Điểm AHP tổng hợp: PA1={{ '%.3f'|format(final_scores['PA1']) }}, PA2={{ '%.3f'|format(final_scores['PA2']) }}, PA3={{ '%.3f'|format(final_scores['PA3']) }}<br>
+                     • {{ recommended }} phù hợp nhất vì khách hàng đang gặp vấn đề với dịch vụ cốt lõi và cần cải thiện ngay lập tức.
+                   </div>
+                </div>
+                <div class="rec-bullet" style="color: #fca5a5;">
+                   <span>📌</span>
+                   <div>
+                     <strong>Khuyến nghị hành động:</strong><br>
+                     • Ưu tiên cải thiện <strong>{% if pull_down_criteria %}{{ pull_down_criteria[0].feature_vi }}{% else %}các tiêu chí dịch vụ{% endif %}</strong> ngay trong chuyến bay tiếp theo.<br>
+                     • Theo dõi lại phản hồi của hành khách này sau 30 ngày.
+                   </div>
+                </div>
+                {% else %}
+                <div class="rec-bullet">
+                   <span>😊</span>
+                   <div>
+                     <strong>Lý do khách hàng HÀI LÒNG:</strong><br>
+                     • Xác suất hài lòng đạt {{ prob_satisfied|round(1) }}% (vượt ngưỡng 70%)<br>
+                     • {{ positive_criteria|length }} tiêu chí được đánh giá tốt từ 4.0 điểm trở lên<br>
+                     {% if positive_criteria %}
+                     • Tiêu chí nổi bật nhất: <strong>{{ positive_criteria[0].feature_vi }}</strong> ({{ positive_criteria[0].score }}/5)
+                     {% endif %}
+                   </div>
+                </div>
+                <div class="rec-bullet">
+                   <span>⚖️</span>
+                   <div>
+                     <strong>Lý do chọn {{ recommended }}:</strong><br>
+                     • Khách hàng hài lòng → tập trung vào việc giữ chân (Retain) và khai thác tiềm năng nâng hạng (Upsell).<br>
+                     • Điểm AHP: PA1={{ '%.3f'|format(final_scores['PA1']) }}, PA2={{ '%.3f'|format(final_scores['PA2']) }}, PA3={{ '%.3f'|format(final_scores['PA3']) }}
+                   </div>
+                </div>
+                {% endif %}
+              </div>
+            </div>
 
             <div class="winner-actions">
               <button type="button" class="winner-btn" id="copyConclusionBtn">📋 Sao chép kết luận</button>
@@ -1019,6 +1270,90 @@
         <button type="button" class="nav-btn" id="prevStep">Bước trước</button>
         <button type="button" class="nav-btn" id="nextStep">Bước tiếp theo</button>
       </div>
+
+      <!-- Section: Lộ trình ra quyết định -->
+      <section class="step-card decision-trace" style="margin-top: 30px; border-top: 2px solid #6366f1;">
+        <div class="step-header">
+          <div>
+            <h3>🛣️ Lộ trình ra quyết định (Decision Trace)</h3>
+            <p>Giải cấu trúc logic hệ thống từ dữ liệu thô đến đề xuất hành động.</p>
+          </div>
+        </div>
+        <div class="step-body">
+          <div class="timeline">
+            <!-- Bước 1: Phân loại -->
+            <div class="time-item done">
+              <div class="time-marker">1</div>
+              <div class="time-content">
+                <h4 style="color: #6366f1;">Phân loại trạng thái hài lòng</h4>
+              </div>
+            </div>
+
+            <!-- Bước 2: Điểm yếu -->
+            <div class="time-item done">
+              <div class="time-marker">2</div>
+              <div class="time-content">
+                <h4 style="color: #6366f1;">Xác định các tiêu chí ưu tiên cải thiện</h4>
+                <p>Dựa trên Impact Score (50% XGBoost + 50% AHP), các yếu tố gây ảnh hưởng lớn nhất là:</p>
+                <ul class="trace-list">
+                  {% for crit in top_criteria %}
+                  <li><strong>{{ crit }}</strong> (Trọng số ảnh hưởng cao trong mô hình)</li>
+                  {% endfor %}
+                </ul>
+              </div>
+            </div>
+
+            <!-- Bước 3: AHP Context -->
+            <div class="time-item done">
+              <div class="time-marker">3</div>
+              <div class="time-content">
+                <h4 style="color: #6366f1;">Phân tích trọng số chuyên gia (AHP)</h4>
+                {% set best_w = ahp_data.step4_weights|max %}
+                <p>Trọng số AHP xác định tiêu chí quan trọng nhất chiếm <strong>{{ (best_w * 100)|round(1) }}%</strong> tổng trọng số. Hệ số nhất quán <strong>CR = {{ ahp_data.step5_consistency.CR|round(4) }}</strong> (< 0.1 ✓), đảm bảo logic so sánh không bị mâu thuẫn.</p>
+              </div>
+            </div>
+
+            <!-- Bước 4: So sánh PA -->
+            <div class="time-item active">
+              <div class="time-marker">4</div>
+              <div class="time-content">
+                <h4 style="color: #6366f1;">So sánh mức độ phù hợp của 3 phương án</h4>
+                <div id="paTraceChart" style="height: 160px; margin-top: 10px;"></div>
+                <div class="pa-mini-table">
+                   <div class="mini-row"><span>🥇 {{ pa_titles.get(recommended, recommended) }}</span> <strong>{{ ((final_scores.get(recommended, 0)) * 100)|round(2) }}%</strong></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bước 5: Kết luận -->
+            <div class="time-item last">
+              <div class="time-marker">✓</div>
+              <div class="time-content">
+                <h4 style="color: #10b981;">Kết luận & Hành động</h4>
+                <p>Phương án <strong>{{ recommended }}</strong> được chọn vì có sự tương quan cao nhất giữa nhu cầu khách hàng (Impact Score) và định hướng chiến lược từ AHP. Khoảng cách với phương án nhì là <strong>{{ ((final_scores.get(recommended, 0) - (second_best_score|default(0))) * 100)|round(2) }}%</strong>.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</section>
+
+<style>
+.timeline { position: relative; padding: 20px 0; }
+.timeline::before { content: ''; position: absolute; left: 15px; top: 0; bottom: 0; width: 2px; background: rgba(255,255,255,0.05); }
+.time-item { position: relative; padding-left: 50px; margin-bottom: 30px; }
+.time-marker { position: absolute; left: 0; top: 0; width: 32px; height: 32px; border-radius: 50%; background: #1e293b; border: 2px solid #334155; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #64748b; z-index: 2; transition: 0.3s; }
+.time-item.done .time-marker { background: #6366f1; border-color: #6366f1; color: white; }
+.time-item.active .time-marker { background: #818cf8; border-color: #818cf8; color: white; box-shadow: 0 0 10px rgba(99,102,241,0.4); }
+.time-item.last .time-marker { background: #10b981; border-color: #10b981; color: white; }
+.time-content h4 { margin: 0 0 8px; font-size: 15px; }
+.time-content p { margin: 0; font-size: 13.5px; color: #94a3b8; line-height: 1.5; }
+.trace-list { margin: 8px 0; padding-left: 18px; color: #64748b; font-size: 12.5px; }
+.pa-mini-table { margin-top: 10px; background: rgba(255,255,255,0.03); padding: 10px; border-radius: 8px; }
+.mini-row { display: flex; justify-content: space-between; font-size: 13px; color: #e5e7eb; }
+</style>
     </div>
   </div>
 </section>
@@ -1161,6 +1496,26 @@
       }
     });
   }
+
+  const paTraceData = {{ final_scores|tojson }};
+  const traceTrace = {
+    x: [paTraceData.PA1, paTraceData.PA2, paTraceData.PA3],
+    y: ['PA1', 'PA2', 'PA3'],
+    type: 'bar',
+    orientation: 'h',
+    marker: {
+      color: ['#6366f1', '#6366f1', '#6366f1'].map((c, i) => ['PA1', 'PA2', 'PA3'][i] === '{{ recommended }}' ? '#10b981' : 'rgba(255,255,255,0.1)')
+    }
+  };
+
+  Plotly.newPlot('paTraceChart', [traceTrace], {
+    paper_bgcolor: 'transparent',
+    plot_bgcolor: 'transparent',
+    margin: { l: 40, r: 20, t: 10, b: 30 },
+    xaxis: { tickformat: '.1%', gridcolor: 'rgba(255,255,255,0.05)', tickfont: { color: '#94a3b8' } },
+    yaxis: { tickfont: { color: '#cbd5e1' } },
+    height: 160
+  }, { displayModeBar: false });
 
   const printBtn = document.getElementById('printAnalysisBtn');
   if (printBtn) {

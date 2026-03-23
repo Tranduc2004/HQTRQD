@@ -24,7 +24,7 @@
       {% for item in feedback_list %}
       <tr>
         <td>#{{ item['id'] }}</td>
-        <td>{{ item['created_at'].strftime('%d/%m/%Y %H:%M') }}</td>
+        <td data-order="{{ item['created_at'].timestamp() }}">{{ item['created_at'].strftime('%d/%m/%Y %H:%M') }}</td>
         <td><strong>{{ item['passenger_name'] }}</strong></td>
         <td>
           <span class="badge" style="background: rgba(79, 70, 229, 0.1); color: var(--primary);">{{ item['ticket_class'] }}</span>

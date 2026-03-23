@@ -293,20 +293,20 @@
   <h3><span class="material-symbols-rounded">hub</span> Cấu trúc mô hình nghiên cứu</h3>
   <div class="calc-grid" style="margin-top: 12px;">
     <article class="calc-mini-card">
-      <strong>Goal</strong>
+      <strong>Mục tiêu</strong>
       <p>Đánh giá mức độ hài lòng khách hàng hàng không theo từng hạng vé.</p>
     </article>
     <article class="calc-mini-card">
-      <strong>Criteria Layer</strong>
+      <strong>Tầng tiêu chí</strong>
       <p>6 tiêu chí dịch vụ đặc thù cho mỗi hạng vé: Business, Economy, Eco Plus.</p>
     </article>
     <article class="calc-mini-card">
-      <strong>Alternatives</strong>
-      <p>Hai trạng thái đầu ra: Satisfied và Dissatisfied.</p>
+      <strong>Các phương án</strong>
+      <p>Hai trạng thái đầu ra: Hài lòng (Satisfied) và Không hài lòng (Dissatisfied).</p>
     </article>
     <article class="calc-mini-card">
-      <strong>Hybrid Decision</strong>
-      <p>Kết hợp trọng số AHP (chuyên gia) và feature importance từ XGBoost.</p>
+      <strong>Quyết định lai</strong>
+      <p>Kết hợp trọng số AHP (chuyên gia) và độ quan trọng đặc trưng (feature importance) từ XGBoost.</p>
     </article>
   </div>
 </section>
@@ -328,7 +328,7 @@
   <div class="calc-grid" style="margin-top: 12px;">
     <article class="calc-mini-card">
       <strong>Quy tắc phân loại</strong>
-      <p><strong>score >= 0.7</strong> -> <strong>satisfied</strong><br/><strong>score &lt; 0.7</strong> -> <strong>unsatisfied</strong></p>
+      <p><strong>score >= 0.6</strong> -> <strong>satisfied</strong><br/><strong>score &lt; 0.6</strong> -> <strong>unsatisfied</strong></p>
       <p>Điểm score được lấy từ xác suất hài lòng của model sau khi xử lý phản hồi khách hàng.</p>
     </article>
     <article class="calc-mini-card">

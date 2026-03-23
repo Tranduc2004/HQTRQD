@@ -136,19 +136,19 @@
 <section class="kpi-row" style="margin-bottom: 40px;">
   <div class="kpi" style="cursor: default;">
     <span>Trạng thái DSS (Hệ thống)</span>
-    <strong style="color: {% if stats.dss_ready %}var(--accent){% else %}var(--danger){% endif %}">
+    <strong class="{% if stats.dss_ready %}text-accent{% else %}text-danger{% endif %}">
       {{ 'Sẵn sàng hoạt động' if stats.dss_ready else 'Chưa khả dụng' }}
     </strong>
   </div>
   <div class="kpi" style="cursor: default;">
     <span>Trọng số Chuyên gia (AHP)</span>
-    <strong style="color: {% if stats.ahp_ready %}var(--accent){% else %}var(--danger){% endif %}">
+    <strong class="{% if stats.ahp_ready %}text-accent{% else %}text-danger{% endif %}">
       {{ 'Đã tích hợp' if stats.ahp_ready else 'Thiếu' }}
     </strong>
   </div>
   <div class="kpi" style="cursor: default;">
     <span>Mô hình thông minh (Model)</span>
-    <strong style="color: var(--primary);">{{ stats.model_ready }}/3 Ready</strong>
+    <strong class="text-primary">{{ stats.model_ready }}/3 Sẵn sàng</strong>
   </div>
   <div class="kpi" style="cursor: default;">
     <span>Tổng số đánh giá</span>
@@ -184,13 +184,13 @@
           <td style="padding: 12px; font-weight: 500;">{{ row.passenger_name }}</td>
           <td style="padding: 12px;">{{ row.ticket_class }}</td>
           <td style="padding: 12px;">
-            <span style="display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 50px; font-size: 12px; font-weight: 600; background: {% if row.prediction == 'Satisfied' %}rgba(16, 185, 129, 0.1); color: #047857;{% else %}rgba(239, 68, 68, 0.1); color: #b91c1c;{% endif %}">
+            <span class="badge {% if row.prediction == 'Satisfied' %}badge-sat{% else %}badge-unsat{% endif %}" style="gap: 4px;">
               <span class="material-symbols-rounded" style="font-size: 14px;">{% if row.prediction == 'Satisfied' %}thumb_up{% else %}thumb_down{% endif %}</span>
               {{ 'Hài lòng' if row.prediction == 'Satisfied' else 'Không hài lòng' }}
             </span>
           </td>
           <td style="padding: 12px;">
-            <span style="display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 700; color: white; background: {% if row.risk_level == 'HIGH' %}var(--danger){% elif row.risk_level == 'MEDIUM' %}#f59e0b{% else %}var(--accent){% endif %}">
+            <span class="badge {% if row.risk_level == 'HIGH' %}badge-risk-high{% elif row.risk_level == 'MEDIUM' %}badge-risk-medium{% else %}badge-risk-low{% endif %}">
               {{ 'CAO' if row.risk_level == 'HIGH' else 'TRUNG BÌNH' if row.risk_level == 'MEDIUM' else 'THẤP' }}
             </span>
           </td>

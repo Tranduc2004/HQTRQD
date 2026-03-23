@@ -15,6 +15,25 @@ import plotly.graph_objects as go
 import psycopg2
 from flask import Flask, flash, redirect, render_template, request, session, url_for
 from psycopg2.extras import Json, RealDictCursor
+import math
+
+def safe_convert(obj):
+    """Convert numpy/pandas types to Python native for JSON serialization"""
+    if obj is None:
+        return None
+    if isinstance(obj, float) and math.isnan(obj):
+        return 0.0
+    if isinstance(obj, (np.integer,)):
+        return int(obj)
+    if isinstance(obj, (np.floating,)):
+        return float(obj)
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+    if isinstance(obj, dict):
+        return {str(k): safe_convert(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [safe_convert(i) for i in obj]
+    return obj
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 if str(BASE_DIR) not in sys.path:
@@ -24,6 +43,11 @@ from recommendation_engine import (
     classify_satisfaction_level,
     get_recommendation_plans,
     rank_recommendation_plans_by_impact,
+    select_pa_combined,
+    normalize_to_satisfaction,
+    is_weak_criteria,
+    get_criteria_label,
+    INVERSE_CRITERIA,
 )
 
 PREDICTION_LABELS = {
@@ -260,19 +284,29 @@ class AirlineDSS:
 
         xgb_importance = model.feature_importances_
 
-        # AHP files may not contain all current model features; align safely by key.
-        ahp_weights_for_class = self.ahp_weights.get(ticket_class, {}) if isinstance(self.ahp_weights, dict) else {}
-        ahp_dict = ahp_weights_for_class.get("weights", {}) if isinstance(ahp_weights_for_class, dict) else {}
+        # AHP weights from pre-loaded dictionary
+        ahp_dict = self.ahp_weights.get(ticket_class, {}).get("weights", {}) if isinstance(self.ahp_weights, dict) else {}
         raw_ahp_values = np.array([float(ahp_dict.get(f, 0.0)) for f in features], dtype=float)
+        
+        # Normalize AHP weights
         if raw_ahp_values.sum() > 0:
             ahp_values = raw_ahp_values / raw_ahp_values.sum()
         else:
             ahp_values = np.full(len(features), 1.0 / len(features), dtype=float)
 
-        feature_values = passenger_data[features].values[0]
+        # Raw feature values
+        raw_values = passenger_data[features].values[0]
+        
+        # Normalize feature values to [0, 1] range where 1.0 = Satisfied, 0.0 = Unsatisfied
+        norm_values = np.array([normalize_to_satisfaction(f, val) for f, val in zip(features, raw_values)])
+        
+        # Inversion: Unsatisfied features (low score) should have higher impact for improvement
+        # We use (1 - normalized_score) to emphasize what is POOR.
+        inverted_values = 1.0 - norm_values
 
         combined_weights = (xgb_importance * 0.5 + ahp_values * 0.5)
-        impact_scores = combined_weights * feature_values
+        impact_scores = combined_weights * inverted_values
+        
         total_impact = impact_scores.sum()
         if total_impact > 0:
             impact_percentage = (impact_scores / total_impact) * 100
@@ -282,7 +316,8 @@ class AirlineDSS:
         impact_df = pd.DataFrame(
             {
                 "Feature": features,
-                "Current_Value": feature_values,
+                "Current_Value": raw_values,
+                "Normalized_Value": norm_values,
                 "Combined_Weight": combined_weights,
                 "Impact_Score": impact_scores,
                 "Impact_%": impact_percentage,
@@ -294,9 +329,16 @@ class AirlineDSS:
         prediction_result = self.predict_satisfaction(passenger_data, ticket_class)
         impact_df = self.calculate_feature_impact(passenger_data, ticket_class)
 
+        # Weak features: determine if criteria are 'weak' based on their type (inverse vs normal)
+        weak_mask = np.array([is_weak_criteria(f, val) for f, val in zip(impact_df["Feature"], impact_df["Current_Value"])])
+        
+        # Categorical features usually don't count for 'weak' in the same way, but let's filter if needed
+        # We also need to exclude non-slider/delay features if they were included by mistake
+        exclude_features = ["Gender", "Customer Type", "Type of Travel", "Age"]
+        
         weak_features = impact_df[
-            (impact_df["Current_Value"] <= 2)
-            & (impact_df["Combined_Weight"] > impact_df["Combined_Weight"].median())
+            weak_mask 
+            & (~impact_df["Feature"].isin(exclude_features))
         ]
 
         priority_actions = []
@@ -308,13 +350,16 @@ class AirlineDSS:
                     "feature": f_name,
                     "current_rating": float(row["Current_Value"]),
                     "impact": float(row["Impact_%"]),
-                    "urgency": "HIGH" if row["Current_Value"] <= 1 else "MEDIUM",
+                    "urgency": "HIGH" if row["Current_Value"] < 2 else "MEDIUM",
                     "action": f"Cải thiện '{f_vi}' (Hiện tại {row['Current_Value']}/5)",
                 }
             )
 
-        prob_dissatisfied = float(prediction_result["prob_dissatisfied"])
-        risk_score = prob_dissatisfied * 0.7 + (len(weak_features) / len(impact_df) * 100) * 0.3
+        prob_dissatisfied = float(prediction_result["prob_dissatisfied"]) # Scale 0-100
+        weak_ratio_percent = (len(weak_features) / len(impact_df) * 100)
+        
+        # Risk Score = Prob_Unsat * 0.7 + Weak_Ratio * 0.3
+        risk_score = prob_dissatisfied * 0.7 + weak_ratio_percent * 0.3
 
         return {
             "ticket_class": ticket_class,
@@ -521,31 +566,41 @@ def map_labels(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def calculate_ahp_consistency(matrix: list[list[float]], weights: Optional[list[float]] = None) -> Dict[str, float | list[float]]:
+def calculate_ahp_consistency(matrix: list[list[float]], weights: Optional[list[float]] = None) -> Dict[str, Any]:
+    """
+    Tính chỉ số nhất quán (CR) cho ma trận AHP.
+    Công thức: lambda_max = mean(Aw / w), CI = (lambda_max - n) / (n - 1), CR = CI / RI
+    """
     arr = np.array(matrix, dtype=float)
-
-    if weights is None:
-        eigenvalues, eigenvectors = np.linalg.eig(arr)
-        max_index = int(np.argmax(np.real(eigenvalues)))
-        principal = np.real(eigenvectors[:, max_index])
-        computed_weights = principal / principal.sum()
-    else:
-        computed_weights = np.array(weights, dtype=float)
-
-    weighted_sum = np.dot(arr, computed_weights)
-    lambda_max = float(np.mean(weighted_sum / computed_weights))
-
     n = len(arr)
-    ci = float((lambda_max - n) / (n - 1)) if n > 1 else 0.0
+    
+    if weights is None:
+        # Tính eigenvector lớn nhất nếu không truyền weights
+        eigenvalues, eigenvectors = np.linalg.eig(arr)
+        max_idx = int(np.argmax(np.real(eigenvalues)))
+        weights_arr = np.real(eigenvectors[:, max_idx])
+        weights_arr = weights_arr / weights_arr.sum()
+    else:
+        weights_arr = np.array(weights, dtype=float)
+
+    # Tính lambda_max = mean(Aw / w)
+    weighted_sum = np.dot(arr, weights_arr)
+    # Tránh chia cho 0
+    safe_weights = np.where(weights_arr == 0, 1e-9, weights_arr)
+    lambda_inv = weighted_sum / safe_weights
+    lambda_max = float(np.mean(lambda_inv))
+
+    # Tính CI và CR
+    ci = (lambda_max - n) / (n - 1) if n > 1 else 0.0
     ri = RI_TABLE.get(n, 1.24)
-    cr = float(ci / ri) if ri > 0 else 0.0
+    cr = ci / ri if ri > 0 else 0.0
 
     return {
-        "weights": computed_weights.tolist(),
+        "weights": weights_arr.tolist(),
         "lambda_max": lambda_max,
         "ci": ci,
         "cr": cr,
-        "is_consistent": cr < 0.1,
+        "is_consistent": cr < 0.1
     }
 
 
@@ -600,16 +655,26 @@ def _compute_priority_weights(normalized_matrix: list[list[float]]) -> list[floa
 
 def _build_alternative_profiles(level: str) -> Dict[str, Dict[str, float]]:
     if level == "satisfied":
+        # PA3 wins (Upsell potential)
         return {
-            "PA1": {"service_quality": 0.88, "operations": 0.82, "technology": 0.80},
-            "PA2": {"service_quality": 0.79, "operations": 0.76, "technology": 0.74},
-            "PA3": {"service_quality": 0.70, "operations": 0.69, "technology": 0.67},
+            "PA1": {"service_quality": 0.65, "operations": 0.62, "technology": 0.60},
+            "PA2": {"service_quality": 0.78, "operations": 0.75, "technology": 0.72},
+            "PA3": {"service_quality": 0.92, "operations": 0.88, "technology": 0.84},
         }
-    return {
-        "PA1": {"service_quality": 0.91, "operations": 0.84, "technology": 0.78},
-        "PA2": {"service_quality": 0.82, "operations": 0.75, "technology": 0.71},
-        "PA3": {"service_quality": 0.73, "operations": 0.67, "technology": 0.64},
-    }
+    elif level == "neutral":
+        # PA2 wins (Loyalty/Retention)
+        return {
+            "PA1": {"service_quality": 0.75, "operations": 0.70, "technology": 0.65},
+            "PA2": {"service_quality": 0.90, "operations": 0.85, "technology": 0.80},
+            "PA3": {"service_quality": 0.72, "operations": 0.68, "technology": 0.64},
+        }
+    else: # unsatisfied
+        # PA1 wins (Core Service Improvement)
+        return {
+            "PA1": {"service_quality": 0.95, "operations": 0.90, "technology": 0.85},
+            "PA2": {"service_quality": 0.75, "operations": 0.72, "technology": 0.68},
+            "PA3": {"service_quality": 0.62, "operations": 0.58, "technology": 0.55},
+        }
 
 
 def _criterion_theme(criterion: str) -> str:
@@ -644,7 +709,24 @@ def calculate_ahp_steps(feedback_row: Dict[str, Any]) -> Dict[str, Any]:
     col_sums, step3_normalized = _normalize_matrix(step2_matrix)
     step4_weights = _compute_priority_weights(step3_normalized)
 
-    consistency_raw = calculate_ahp_consistency(step2_matrix, step4_weights)
+    # Step 5: Consistency Check (CR)
+    # LỖI FIX 1: Dùng ma trận chuyên gia (Expert Reference Matrix) để tính CR 
+    # thay vì ma trận tạo từ điểm thực tế (luôn ra CR=0).
+    ticket_class = str(feedback_row.get("ticket_class", "Business"))
+    expert_matrix = AHP_PAIRWISE_MATRICES.get(ticket_class, step2_matrix)
+    
+    # Sử dụng dict rỗng nếu AHP_WEIGHTS là None
+    safe_ahp = AHP_WEIGHTS if AHP_WEIGHTS is not None else {}
+    expert_data = safe_ahp.get(ticket_class, {})
+    expert_weights_map = expert_data.get("weights", {}) if isinstance(expert_data, dict) else {}
+    expert_weights = [float(expert_weights_map.get(c, 0.0)) for c in criteria_names]
+    
+    if len(expert_weights) != len(criteria_names) or sum(expert_weights) == 0:
+        # Fallback if expert data missing
+        consistency_raw = calculate_ahp_consistency(step2_matrix, step4_weights)
+    else:
+        consistency_raw = calculate_ahp_consistency(expert_matrix, expert_weights)
+
     n = len(criteria_names)
     ri = RI_TABLE.get(n, 1.24)
     step5_consistency = {
@@ -677,7 +759,8 @@ def calculate_ahp_steps(feedback_row: Dict[str, Any]) -> Dict[str, Any]:
         alternative_scores["PA2"].append(pa2)
         alternative_scores["PA3"].append(pa3)
 
-        per_criterion[criterion] = [
+        criterion_label = FEATURE_VI.get(criterion, criterion)
+        per_criterion[criterion_label] = [
             [1.0, pa1 / pa2, pa1 / pa3],
             [pa2 / pa1, 1.0, pa2 / pa3],
             [pa3 / pa1, pa3 / pa2, 1.0],
@@ -1195,6 +1278,73 @@ def admin_feedback_detail(feedback_id):
     breakdown = ahp_data["step6_alternatives"]["breakdown"]
     final_scores = ahp_data["step6_alternatives"]["final_scores"]
 
+    # Calculate prob metrics (0-100%)
+    prob_satisfied = ahp_data["feedback"]["score"] * 100
+    prob_dissatisfied = 100 - prob_satisfied
+
+    # Calculate impact analysis
+    ticket_class = row["ticket_class"]
+    ratings_dict = row["ratings"] if isinstance(row["ratings"], dict) else {}
+    passenger_df = pd.DataFrame([ratings_dict])
+    
+    # Impact Analysis from DSS
+    impact_df = DSS.calculate_feature_impact(passenger_df, ticket_class)
+    impact_analysis = impact_df.to_dict(orient="records")
+    
+    # Calculate average impact for filtering
+    avg_impact = float(impact_df["Impact_Score"].mean()) if not impact_df.empty else 0.0
+
+    # Filter Pull-down and Positive criteria
+    pull_down_criteria = []
+    positive_criteria = []
+    
+    for _, imp in impact_df.iterrows():
+        f_name = imp["Feature"]
+        score = float(imp["Current_Value"])
+        impact = float(imp["Impact_Score"])
+        
+        # Use get_criteria_label for consistent labeling
+        label, severity = get_criteria_label(f_name, score)
+        display_score = f"{int(score)} phút" if f_name in INVERSE_CRITERIA else f"{score:.1f}/5"
+
+        if is_weak_criteria(f_name, score) and impact >= avg_impact:
+            pull_down_criteria.append({
+                "feature": f_name,
+                "feature_vi": FEATURE_VI.get(f_name, f_name),
+                "score": score,
+                "display_score": display_score,
+                "impact_pct": float(imp["Impact_%"]),
+                "label": label,
+                "severity": severity
+            })
+        
+        # Positive criteria: for sliders >= 4.0, for delays <= 15 mins
+        is_positive = False
+        if f_name in INVERSE_CRITERIA:
+            if score <= 15: # DELAY_THRESHOLD_GOOD
+                is_positive = True
+        else:
+            if score >= 4.0:
+                is_positive = True
+                
+        if is_positive:
+            positive_criteria.append({
+                "feature": f_name,
+                "feature_vi": FEATURE_VI.get(f_name, f_name),
+                "score": score,
+                "display_score": display_score,
+                "label": label,
+                "severity": severity
+            })
+
+    # Risk Calculation details: Use the same is_weak_criteria check consistently
+    features_count = len(impact_df)
+    weak_count = sum(1 for _, row in impact_df.iterrows() if is_weak_criteria(row["Feature"], row["Current_Value"]))
+    weak_ratio_percent = (weak_count / features_count * 100) if features_count > 0 else 0.0
+    
+    risk_score = float(row.get("risk_score", 0.0))
+    risk_level = str(row.get("risk_level", "Low"))
+
     recommended_key = recommended.lower()
     top_criteria = sorted(
         breakdown.keys(),
@@ -1210,11 +1360,24 @@ def admin_feedback_detail(feedback_id):
     sorted_scores = sorted(final_scores.items(), key=lambda x: x[1], reverse=True)
     second_best_score = float(sorted_scores[1][1]) if len(sorted_scores) > 1 else 0.0
 
+    from recommendation_engine import select_pa_combined
+    pa_result = select_pa_combined(
+        prediction=row["prediction"].lower() if row["prediction"] else "unsatisfied",
+        seat_class=row["ticket_class"],
+        impact_analysis=impact_analysis,
+        ahp_scores=final_scores,
+        prob_satisfied=prob_satisfied,
+        risk_score=risk_score
+    )
+
+    # Build pa_titles cho template
     pa_titles = {
-        "PA1": "Duy trì & Cải thiện chất lượng dịch vụ",
-        "PA2": "Chương trình khách hàng thân thiết",
-        "PA3": "Đề xuất nâng hạng ghế",
+        'PA1': pa_result['PA1']['name'],
+        'PA2': pa_result['PA2']['name'],
+        'PA3': pa_result['PA3']['name'],
     }
+
+    recommended = pa_result['recommended']  # luôn = 'PA1'
 
     return render_template(
         "admin_feedback_detail.html",
@@ -1222,10 +1385,20 @@ def admin_feedback_detail(feedback_id):
         data=ahp_data,
         recommended=recommended,
         pa_titles=pa_titles,
+        pa_result=pa_result,
+        optimal_pa=pa_result['recommended'],
         top_criteria=top_criteria,
         second_best_score=second_best_score,
         final_scores=final_scores,
         breakdown=breakdown,
+        prob_satisfied=prob_satisfied,
+        prob_dissatisfied=prob_dissatisfied,
+        impact_analysis=impact_analysis,
+        pull_down_criteria=pull_down_criteria,
+        positive_criteria=positive_criteria,
+        risk_score=risk_score,
+        risk_level=risk_level,
+        weak_ratio_percent=weak_ratio_percent
     )
 
 
@@ -1327,6 +1500,487 @@ def admin_model_stats():
     }
     
     return render_template("admin_model_stats.html", model_data=model_data, feature_vi=FEATURE_VI)
+
+
+@app.route("/admin/whatif/<int:feedback_id>", methods=["GET", "POST"])
+@login_required
+def admin_whatif(feedback_id):
+    query = """
+    SELECT id, ticket_class, passenger_name, ratings, confidence, prediction, risk_score
+    FROM feedback_submissions
+    WHERE id = %s;
+    """
+    with get_db_connection() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(query, (feedback_id,))
+            row = cur.fetchone()
+
+    if not row:
+        flash("Không tìm thấy phản hồi.", "danger")
+        return redirect(url_for("admin_feedback_list"))
+
+    ticket_class = row["ticket_class"]
+    original_ratings = row["ratings"] or {}
+    features = FEATURE_CONFIG.get(ticket_class, [])
+
+    if request.method == "POST":
+        if not DSS:
+            return {"error": "Hệ thống DSS chưa sẵn sàng"}, 500
+            
+        sim_ratings = request.json.get("ratings", {})
+        
+        # Prepare data for simulation
+        passenger_dict = {}
+        for feat in features:
+            # Use sim value if provided, else original, else default
+            val = sim_ratings.get(feat, original_ratings.get(feat, 3.0))
+            passenger_dict[feat] = [float(val)]
+        
+        passenger_data = pd.DataFrame(passenger_dict)
+        
+        # 1. Prediction simulation
+        sim_res = DSS.generate_recommendations(passenger_data, ticket_class)
+        new_prob_sat = float(sim_res["prediction"]["prob_satisfied"])
+        new_risk = float(sim_res["risk_score"])
+        new_prediction = sim_res["prediction"]["prediction"].lower()
+        
+        # 2. AHP ranking simulation
+        criteria_scores = [float(passenger_dict[f][0]) for f in features]
+        # Re-map delay to 1-5 for AHP
+        ahp_input_scores = []
+        for f, s in zip(features, criteria_scores):
+            if "Delay" in f:
+                quality = 5.0 - min(max(s, 0.0), 120.0) / 30.0
+                ahp_input_scores.append(max(1.0, min(5.0, quality)))
+            else:
+                ahp_input_scores.append(s)
+        
+        matrix = _build_pairwise_matrix(ahp_input_scores)
+        _, norm_m = _normalize_matrix(matrix)
+        weights = _compute_priority_weights(norm_m)
+        
+        sat_level = classify_satisfaction_level(new_prob_sat / 100.0)
+        profiles = _build_alternative_profiles(sat_level)
+        
+        alt_values = {"PA1": 0.0, "PA2": 0.0, "PA3": 0.0}
+        impact_radar = []
+        for idx, f in enumerate(features):
+            theme = _criterion_theme(f)
+            w = float(weights[idx])
+            alt_values["PA1"] += w * float(profiles["PA1"][theme])
+            alt_values["PA2"] += w * float(profiles["PA2"][theme])
+            alt_values["PA3"] += w * float(profiles["PA3"][theme])
+            
+            # Find impact for this feature
+            f_impact = sim_res["impact_analysis"].loc[sim_res["impact_analysis"]["Feature"] == f, "Impact_%"].values[0]
+            impact_radar.append({
+                "feature": FEATURE_VI.get(f, f),
+                "impact": float(f_impact)
+            })
+            
+        final_p_scores = {k: v / sum(alt_values.values()) for k, v in alt_values.items()}
+        new_pa = max(final_p_scores, key=final_p_scores.get)
+        
+        # Comparison values
+        old_prob_sat = float(row["confidence"]) if row["prediction"] == "Satisfied" else 100.0 - float(row["confidence"])
+        old_data = calculate_ahp_steps(row)
+        old_pa = old_data["step6_alternatives"]["recommended"]
+        
+        return {
+            "new_prob_satisfied": round(new_prob_sat, 1),
+            "old_prob_satisfied": round(old_prob_sat, 1),
+            "prob_change": round(new_prob_sat - old_prob_sat, 1),
+            "new_risk_score": round(new_risk, 1),
+            "old_risk_score": round(float(row.get("risk_score", 0.0)), 1),
+            "new_pa": new_pa,
+            "old_pa": old_pa,
+            "pa_changed": new_pa != old_pa,
+            "new_prediction": new_prediction,
+            "impact_comparison": impact_radar
+        }
+
+    # GET
+    original_dss = calculate_ahp_steps(row)
+    return render_template(
+        "admin_whatif.html",
+        feedback=row,
+        features=features,
+        feature_vi=FEATURE_VI,
+        original_data=original_dss
+    )
+
+
+def get_available_months() -> List[str]:
+    """Lấy danh sách các tháng có dữ liệu phản hồi trong database."""
+    query = "SELECT DISTINCT TO_CHAR(created_at, 'YYYY-MM') as month FROM feedback_submissions ORDER BY month DESC;"
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(query)
+                return [r[0] for r in cur.fetchall()]
+    except Exception as e:
+        print(f"[ERROR] get_available_months: {e}")
+        return []
+
+
+@app.route("/admin/class-comparison")
+@login_required
+def admin_class_comparison():
+    month_str = request.args.get("month")
+    
+    query = """
+    SELECT ticket_class, prediction, risk_score, ratings, confidence
+    FROM feedback_submissions
+    """
+    params = []
+    if month_str and month_str != "all":
+        query += " WHERE TO_CHAR(created_at, 'YYYY-MM') = %s"
+        params.append(month_str)
+        
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(query, params)
+                rows = cur.fetchall()
+    except Exception as e:
+        print(f"[ERROR] class-comparison query: {e}")
+        rows = []
+
+    if not rows:
+        return render_template("admin_class_comparison.html", classes_data={}, months=get_available_months(), selected_month=month_str)
+
+    try:
+        df = pd.DataFrame(rows)
+        # BUG FIX 2: Xử lý giá trị rỗng/loại bỏ lỗi TypeError khi tính toán
+        df = df.fillna(0)
+        
+        # Group by class
+        classes_data = {}
+        all_features = set()
+        for tc in ["Business", "Economy", "Eco Plus"]:
+            class_df = df[df["ticket_class"] == tc]
+            if class_df.empty:
+                # Trả về data mặc định nếu hạng ghế không có feedback
+                classes_data[tc] = {
+                    "total": 0,
+                    "sat_rate": 0.0,
+                    "avg_risk": 0.0,
+                    "best_pa": "Duy trì chất lượng dịch vụ",
+                    "criteria": {}
+                }
+                continue
+                
+            total = len(class_df)
+            sat_count = len(class_df[class_df["prediction"] == "Satisfied"])
+            sat_rate = (sat_count / total) * 100
+            
+            # Đảm bảo risk_score là float trước khi tính mean
+            risk_vals = pd.to_numeric(class_df["risk_score"], errors='coerce').fillna(0.0)
+            avg_risk = float(risk_vals.mean())
+            
+            # Calculate avg for each criterion
+            criteria_avgs = {}
+            features = FEATURE_CONFIG.get(tc, [])
+            for f in features:
+                all_features.add(f)
+                vals = []
+                for r in class_df["ratings"]:
+                    if r and f in r:
+                        val = r[f]
+                        if val is not None:
+                            vals.append(float(val))
+                criteria_avgs[f] = sum(vals)/len(vals) if vals else 3.0
+                
+            # Determine best PA for this class based on averages
+            mock_row = {
+                "ticket_class": tc,
+                "ratings": criteria_avgs,
+                "prediction": "Satisfied" if sat_rate > 50 else "Dissatisfied",
+                "confidence": sat_rate if sat_rate > 50 else (100 - sat_rate)
+            }
+            ahp_summary = calculate_ahp_steps(mock_row)
+            best_pa = ahp_summary["step6_alternatives"]["recommended"]
+            
+            classes_data[tc] = {
+                "total": total,
+                "sat_rate": round(float(sat_rate), 1) if sat_rate is not None else 0.0,
+                "avg_risk": round(float(avg_risk), 1) if avg_risk is not None else 0.0,
+                "best_pa": best_pa,
+                "criteria": criteria_avgs
+            }
+
+        # Prepare radar data & union of features for the heatmap table
+        common_features = sorted([str(f) for f in all_features])
+        
+        # Đảm bảo mỗi hạng ghế có đủ key trong 'criteria' để tránh lỗi None trong template
+        for cls_name in classes_data:
+            cls_dict = classes_data[cls_name]
+            if "criteria" not in cls_dict:
+                cls_dict["criteria"] = {}
+            for f in common_features:
+                if f not in cls_dict["criteria"]:
+                    cls_dict["criteria"][f] = 0.0
+
+        radar_data = []
+        for tc, d in classes_data.items():
+            # Chỉ vẽ radar nếu có feedback (total > 0)
+            if isinstance(d, dict) and d.get("total", 0) > 0:
+                vals = [round(float(d["criteria"].get(f, 0.0)), 2) for f in common_features]
+                radar_data.append({"name": tc, "values": vals})
+
+        return render_template(
+            "admin_class_comparison.html",
+            classes_data=safe_convert(classes_data),
+            months=get_available_months(),
+            selected_month=month_str or "all",
+            common_features=safe_convert(common_features),
+            feature_vi=FEATURE_VI,
+            radar_data=safe_convert(radar_data)
+        )
+    except Exception as e:
+        print(f"[CRITICAL ERROR] admin_class_comparison: {e}")
+        import traceback
+        traceback.print_exc()
+        return render_template(
+            "admin_class_comparison.html", 
+            classes_data={}, 
+            months=get_available_months(), 
+            selected_month=month_str or "all",
+            common_features=[],
+            radar_data=[],
+            error=str(e)
+        )
+
+
+@app.route("/admin/monthly-report")
+@login_required
+def admin_monthly_report():
+    """Trang báo cáo tổng hợp theo tháng."""
+    month_str = request.args.get("month")
+    if not month_str:
+        # Mặc định lấy tháng hiện tại nếu không có tham số
+        month_str = datetime.now().strftime("%Y-%m")
+    
+    # Query dữ liệu trong tháng được chọn
+    query = """
+    SELECT id, created_at, passenger_name, ticket_class, prediction, 
+           confidence, risk_score, risk_level, ratings
+    FROM feedback_submissions 
+    WHERE TO_CHAR(created_at, 'YYYY-MM') = %s
+    ORDER BY created_at DESC;
+    """
+    
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(query, (month_str,))
+                rows = cur.fetchall()
+    except Exception as e:
+        print(f"[ERROR] admin_monthly_report query: {e}")
+        rows = []
+            
+    month_list = get_available_months()
+    if not month_list and month_str not in month_list:
+        month_list = [month_str]
+            
+    if not rows:
+        return render_template("admin_monthly_report.html", month=month_str, empty=True, month_list=month_list)
+
+    df = pd.DataFrame(rows)
+    df["created_at"] = pd.to_datetime(df["created_at"])
+    
+    # 1. Thống kê Hài lòng & KPI
+    total = len(df)
+    sat_counts = df["prediction"].value_counts().to_dict()
+    sat_pct = (sat_counts.get("Satisfied", 0) / total) * 100
+    unsat_pct = 100 - sat_pct
+    avg_risk = float(df["risk_score"].mean())
+
+    # 2. Xử lý Ratings
+    ratings_list = [r if isinstance(r, dict) else {} for r in df["ratings"].tolist()]
+    ratings_df = pd.json_normalize(ratings_list)
+    
+    # Lấy các cột tiêu chí hợp lệ
+    criteria_cols = [c for c in ratings_df.columns if c in FEATURE_VI and c not in ["Gender", "Customer Type", "Type of Travel"]]
+    
+    # 3. Điểm trung bình theo Hạng vé
+    df_with_ratings = pd.concat([df.reset_index(drop=True), ratings_df.reset_index(drop=True)], axis=1)
+    # Chọn một số tiêu chí tiêu biểu để hiển thị trong bảng table
+    selected_display_criteria = ["Seat comfort", "Inflight entertainment", "Cleanliness", "Food and drink", "Inflight service"] 
+    actual_cols = [c for c in selected_display_criteria if c in df_with_ratings.columns]
+    
+    avg_by_class = df_with_ratings.groupby("ticket_class")[actual_cols].mean().round(2).to_dict("index")
+    
+    # 4. Chạy AHP Tổng quát cho Tháng
+    global_avg_ratings = ratings_df[criteria_cols].mean().to_dict()
+    # Loại bỏ các giá trị NaN nếu có
+    global_avg_ratings = {k: (v if not pd.isna(v) else 3.0) for k, v in global_avg_ratings.items()}
+    
+    # Giả lập 1 dòng feedback trung bình để chạy logic AHP hiện có
+    most_common_class = df["ticket_class"].mode()[0] if not df.empty else "Economy"
+    virtual_row = {
+        "id": 0,
+        "passenger_name": f"Tổng hợp Tháng {month_str}",
+        "ticket_class": most_common_class,
+        "prediction": "Satisfied" if sat_pct >= 50 else "Dissatisfied",
+        "confidence": max(sat_pct, unsat_pct),
+        "ratings": global_avg_ratings,
+        "created_at": month_str
+    }
+    
+    ahp_results = calculate_ahp_steps(virtual_row)
+    final_scores = ahp_results["step6_alternatives"]["final_scores"]
+    recommended_pa = ahp_results["step6_alternatives"]["recommended"]
+    
+    pa_titles = {
+        "PA1": "Duy trì & Cải thiện chất lượng dịch vụ",
+        "PA2": "Chương trình khách hàng thân thiết",
+        "PA3": "Đề xuất nâng hạng ghế",
+    }
+    recommended_title = pa_titles.get(recommended_pa, recommended_pa)
+
+    # 5. Xếp hạng tiêu chí ưu tiên (Top 3) & Ước tính hiệu quả
+    all_prio = []
+    weights = ahp_results["step4_weights"]
+    criteria_names = ahp_results["criteria_names"]
+    
+    for i, name in enumerate(criteria_names):
+        avg_val = global_avg_ratings.get(name, 3.0)
+        weight = weights[i]
+        # Impact = weight * khoảng trống cải thiện (5.0 - avg)
+        improvement_impact = weight * (5.0 - avg_val)
+        
+        # Lấy thêm feature importance từ XGBoost để tăng độ tin cậy
+        xgb_imp = 0.0
+        if MODELS.get(most_common_class):
+            feat_list = FEATURE_CONFIG.get(most_common_class, [])
+            if name in feat_list:
+                f_idx = feat_list.index(name)
+                # handle models that might not have feature_importances_ (rare here)
+                try:
+                    xgb_imp = float(MODELS[most_common_class].feature_importances_[f_idx])
+                except Exception:
+                    xgb_imp = 0.0
+        
+        all_prio.append({
+            "feature": name,
+            "feature_vi": FEATURE_VI.get(name, name),
+            "avg_score": round(avg_val, 2),
+            "weight": round(weight * 100, 1),
+            "impact": round(improvement_impact * 10, 2), # Scale cho dễ nhìn
+            "xgb_importance": round(xgb_imp * 100, 1),
+            "priority_level": "CAO" if (avg_val < 3 or improvement_impact > 0.3) else "TRUNG_BINH" if (avg_val < 4) else "THAP"
+        })
+        
+    all_prio.sort(key=lambda x: x["impact"], reverse=True)
+    top_priorities = all_prio[:3]
+
+    # 6. Biểu đồ Plotly
+    # Biểu đồ tròn Hài lòng
+    df_sat = pd.DataFrame({
+        "Mức độ": ["Hài lòng", "Không hài lòng"],
+        "Số lượng": [sat_counts.get("Satisfied", 0), sat_counts.get("Dissatisfied", 0)]
+    })
+    
+    fig_sat = px.pie(
+        df_sat, 
+        names="Mức độ", 
+        values="Số lượng",
+        color="Mức độ",
+        color_discrete_map={"Hài lòng": "#29a36a", "Không hài lòng": "#cf4d4d"},
+        hole=0.4
+    )
+    fig_sat.update_layout(
+        showlegend=True, 
+        margin=dict(l=0, r=0, t=30, b=0),
+        height=300,
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(family="Inter", size=12)
+    )
+    
+    # Biểu đồ cột điểm trung bình tiêu chí
+    chart_avg_data = pd.DataFrame([
+        {"feat": FEATURE_VI.get(k, k), "val": round(v, 2)} 
+        for k, v in global_avg_ratings.items()
+    ]).sort_values("val", ascending=True)
+    
+    fig_bar = px.bar(
+        chart_avg_data, x="val", y="feat", orientation='h',
+        color="val", color_continuous_scale="RdYlGn",
+        labels={"val": "Điểm TB", "feat": "Tiêu chí"},
+        range_x=[1, 5]
+    )
+    fig_bar.update_layout(
+        margin=dict(l=0, r=0, t=40, b=30),
+        height=min(600, 200 + len(chart_avg_data)*25),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        xaxis=dict(gridcolor="rgba(255,255,255,0.05)"),
+        yaxis=dict(gridcolor="rgba(255,255,255,0.05)")
+    )
+
+    charts = {
+        "sat_pie": fig_sat.to_html(full_html=False, include_plotlyjs="cdn"),
+        "criteria_bar": fig_bar.to_html(full_html=False, include_plotlyjs=False),
+    }
+
+    return render_template(
+        "admin_monthly_report.html",
+        month=month_str,
+        month_list=month_list,
+        metrics={
+            "total": total,
+            "sat_pct": round(sat_pct, 1),
+            "unsat_pct": round(unsat_pct, 1),
+            "avg_risk": round(avg_risk, 1)
+        },
+        avg_by_class=avg_by_class,
+        top_priorities=top_priorities,
+        recommended_pa=recommended_pa,
+        recommended_title=recommended_title,
+        final_scores=final_scores,
+        charts=charts,
+        feature_vi=FEATURE_VI
+    )
+
+
+@app.route("/admin/monthly-report/export")
+@login_required
+def admin_monthly_report_export():
+    """Xuất JSON báo cáo tháng."""
+    from flask import jsonify
+    month_str = request.args.get("month")
+    if not month_str:
+        month_str = datetime.now().strftime("%Y-%m")
+    
+    query = """
+    SELECT id, created_at, passenger_name, ticket_class, prediction, 
+           confidence, risk_score, risk_level, ratings
+    FROM feedback_submissions 
+    WHERE TO_CHAR(created_at, 'YYYY-MM') = %s;
+    """
+    
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(query, (month_str,))
+                rows = cur.fetchall()
+        
+        # Chuyển đổi datetime sang string
+        for row in rows:
+            if isinstance(row.get('created_at'), datetime):
+                row['created_at'] = row['created_at'].isoformat()
+                
+        return jsonify({
+            "status": "success",
+            "month": month_str,
+            "total": len(rows),
+            "data": rows
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=8502)

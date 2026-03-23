@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="admin-section">
+  <div class="admin-container">
+    <header class="admin-header">
+      <div class="header-content">
+        <span class="material-symbols-rounded header-icon">science</span>
+        <div>
+          <h1>Mô phỏng What-if Analysis</h1>
+          <p>Dự đoán sự thay đổi kết quả khi điều chỉnh các tiêu chí khảo sát</p>
+        </div>
+      </div>
+      <a href="{{ url_for('admin_feedback_detail', feedback_id=feedback.id) }}" class="back-link">
+        <span class="material-symbols-rounded">arrow_back</span> Quay lại chi tiết
+      </a>
+    </header>
+
+    <div class="whatif-grid">
+      <!-- Cột trái: Thông tin gốc -->
+      <div class="whatif-col original-box">
+        <div class="col-card">
+          <div class="card-header-v2">
+            <span class="material-symbols-rounded">history</span>
+            <h3>Dữ liệu Gốc</h3>
+          </div>
+          <div class="feedback-mini-meta">
+            <div class="meta-item"><strong>Hành khách:</strong> {{ feedback.passenger_name }}</div>
+            <div class="meta-item"><strong>Hạng ghế:</strong> {{ feedback.ticket_class }}</div>
+          </div>
+          <div class="original-scores-list">
+            {% for feat in features %}
+            <div class="score-row">
+              <span class="feat-name">{{ feature_vi.get(feat, feat) }}</span>
+              <span class="feat-val">{{ feedback.ratings.get(feat, 0) }}</span>
+            </div>
+            {% endfor %}
+          </div>
+          <hr class="divider">
+          <div class="original-results">
+            <div class="res-item">
+              <label>Xác suất Hài lòng:</label>
+              <div class="val-badge">{{ (original_data.feedback.score * 100)|round(1) }}%</div>
+            </div>
+            <div class="res-item">
+              <label>Risk Score:</label>
+              <div class="val-badge risk-{{ feedback.risk_level|lower }}">{{ feedback.risk_score|round(1) }}</div>
+            </div>
+            <div class="res-item">
+              <label>Phương án (PA):</label>
+              <div class="pa-tag pa-{{ original_data.step6_alternatives.recommended|lower }}">{{ original_data.step6_alternatives.recommended }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cột giữa: Bảng chỉnh thử -->
+      <div class="whatif-col simulator-box">
+        <div class="col-card highlight">
+          <div class="card-header-v2">
+            <span class="material-symbols-rounded">tune</span>
+            <h3>Bảng Điều chỉnh</h3>
+          </div>
+          <form id="whatifForm">
+            <div class="sliders-container">
+              {% for feat in features %}
+              <div class="slider-group">
+                <div class="slider-info">
+                  <label>{{ feature_vi.get(feat, feat) }}</label>
+                  <span class="slider-val" id="val_{{ loop.index }}">{{ feedback.ratings.get(feat, 0) }}</span>
+                </div>
+                {% if 'Delay' in feat %}
+                <input type="range" class="sim-slider" data-feat="{{ feat }}" min="0" max="150" step="5" value="{{ feedback.ratings.get(feat, 0) }}" oninput="updateVal('{{ loop.index }}', this.value)">
+                {% else %}
+                <input type="range" class="sim-slider" data-feat="{{ feat }}" min="1" max="5" step="0.5" value="{{ feedback.ratings.get(feat, 0) }}" oninput="updateVal('{{ loop.index }}', this.value)">
+                {% endif %}
+              </div>
+              {% endfor %}
+            </div>
+            <div class="sim-actions">
+              <button type="button" class="sim-btn run" onclick="runSimulation()">
+                <span class="material-symbols-rounded">play_arrow</span> Chạy mô phỏng
+              </button>
+              <button type="button" class="sim-btn reset" onclick="resetSim()">
+                <span class="material-symbols-rounded">restart_alt</span> Reset gốc
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Cột phải: Kết quả mô phỏng -->
+      <div class="whatif-col results-box">
+        <div class="col-card results-card" id="resultsCard">
+          <div class="card-header-v2">
+            <span class="material-symbols-rounded">analytics</span>
+            <h3>Kết quả Mô phỏng</h3>
+          </div>
+          <div id="loadingOverlay" class="loading-overlay hidden">
+            <div class="spinner"></div>
+          </div>
+          
+          <div class="sim-kpi-grid">
+            <div class="kpi-box">
+              <label>Xác suất Hài lòng mới</label>
+              <div class="kpi-main">
+                <span id="resProb">--</span>%
+                <span id="diffProb" class="diff-badge"></span>
+              </div>
+            </div>
+            <div class="kpi-box">
+              <label>Risk Score mới</label>
+              <div class="kpi-main">
+                <span id="resRisk">--</span>
+                <span id="diffRisk" class="diff-badge"></span>
+              </div>
+            </div>
+            <div class="kpi-box">
+              <label>Phương án đề xuất</label>
+              <div class="kpi-main">
+                <span id="resPA" class="pa-tag-large">--</span>
+                <div id="paAlert" class="pa-alert hidden">Thay đổi!</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="chart-container-sim">
+            <h4>Phân tích Impact thay đổi</h4>
+            <div id="simChart" style="height: 300px;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+.whatif-grid { display: grid; grid-template-columns: 280px 1fr 400px; gap: 20px; margin-top: 20px; align-items: start; }
+.col-card { background: #1e293b; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); padding: 18px; position: relative; }
+.col-card.highlight { border-color: rgba(99,102,241,0.3); box-shadow: 0 0 15px rgba(99,102,241,0.1); }
+.card-header-v2 { display: flex; align-items: center; gap: 8px; margin-bottom: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px; }
+.card-header-v2 h3 { font-size: 16px; margin: 0; color: #f8fafc; }
+.card-header-v2 span { color: #818cf8; }
+
+.score-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; color: #94a3b8; }
+.feat-val { color: #f1f5f9; font-weight: 600; }
+.divider { border: 0; border-top: 1px solid rgba(255,255,255,0.08); margin: 15px 0; }
+
+.original-results .res-item { margin-bottom: 12px; }
+.original-results label { display: block; font-size: 12px; color: #64748b; margin-bottom: 4px; }
+.val-badge { display: inline-block; padding: 4px 10px; border-radius: 6px; background: #334155; font-weight: 700; color: #f8fafc; font-size: 15px; }
+.pa-tag { display: inline-block; padding: 3px 10px; border-radius: 6px; font-weight: 700; font-size: 13px; }
+.pa-pa1 { background: rgba(99,102,241,0.2); color: #818cf8; border: 1px solid rgba(99,102,241,0.3); }
+.pa-pa2 { background: rgba(139,92,246,0.2); color: #a78bfa; border: 1px solid rgba(139,92,246,0.3); }
+.pa-pa3 { background: rgba(16,185,129,0.2); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
+
+.slider-group { margin-bottom: 18px; }
+.slider-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.slider-info label { font-size: 13px; color: #cbd5e1; }
+.slider-val { background: rgba(255,255,255,0.05); padding: 2px 8px; border-radius: 4px; color: #818cf8; font-family: monospace; font-weight: 700; font-size: 14px; }
+.sim-slider { width: 100%; height: 6px; background: #334155; border-radius: 3px; accent-color: #6366f1; }
+
+.sim-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 25px; }
+.sim-btn { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 12px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 14px; }
+.sim-btn.run { background: #6366f1; color: white; }
+.sim-btn.run:hover { background: #4f46e5; box-shadow: 0 0 12px rgba(99,102,241,0.4); }
+.sim-btn.reset { background: rgba(255,255,255,0.05); color: #94a3b8; border: 1px solid rgba(255,255,255,0.1); }
+.sim-btn.reset:hover { background: rgba(255,255,255,0.08); color: #f8fafc; }
+
+.sim-kpi-grid { display: grid; grid-template-columns: 1fr; gap: 15px; margin-bottom: 25px; }
+.kpi-box { padding: 15px; background: rgba(255,255,255,0.03); border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); }
+.kpi-box label { display: block; font-size: 12px; color: #94a3b8; margin-bottom: 8px; }
+.kpi-main { display: flex; align-items: baseline; gap: 10px; color: #f8fafc; font-size: 26px; font-weight: 800; }
+.diff-badge { font-size: 13px; font-weight: 600; padding: 2px 6px; border-radius: 4px; }
+.diff-badge.plus { color: #10b981; background: rgba(16,185,129,0.15); }
+.diff-badge.minus { color: #ef4444; background: rgba(239,68,68,0.15); }
+
+.pa-tag-large { font-size: 24px; padding: 4px 15px; border-radius: 8px; }
+.pa-alert { font-size: 11px; background: #ef4444; color: white; padding: 2px 6px; border-radius: 4px; animation: pulse 1s infinite alternate; }
+@keyframes pulse { from { opacity: 0.6; } to { opacity: 1; } }
+
+.loading-overlay { position: absolute; inset: 0; background: rgba(30,41,59,0.7); z-index: 10; border-radius: 12px; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
+.hidden { display: none !important; }
+.spinner { width: 30px; height: 30px; border: 3px solid rgba(255,255,255,0.1); border-top-color: #6366f1; border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 1200px) {
+    .whatif-grid { grid-template-columns: 1fr 1.5fr; }
+    .original-box { grid-column: 1 / 2; }
+    .results-box { grid-column: 1 / 3; }
+}
+</style>
+
+<script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+<script>
+function updateVal(idx, val) {
+    document.getElementById('val_' + idx).innerText = val;
+}
+
+function resetSim() {
+    document.getElementById('whatifForm').reset();
+    document.querySelectorAll('.sim-slider').forEach(s => {
+        const idx = s.getAttribute('oninput').match(/\d+/)[0];
+        document.getElementById('val_' + idx).innerText = s.value;
+    });
+}
+
+async function runSimulation() {
+    const overlay = document.getElementById('loadingOverlay');
+    overlay.classList.remove('hidden');
+    
+    const sliders = document.querySelectorAll('.sim-slider');
+    const ratings = {};
+    sliders.forEach(s => {
+        ratings[s.dataset.feat] = parseFloat(s.value);
+    });
+
+    try {
+        const response = await fetch(window.location.pathname, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ratings: ratings })
+        });
+        const data = await response.json();
+        
+        // Update UI
+        document.getElementById('resProb').innerText = data.new_prob_satisfied;
+        const diffProb = document.getElementById('diffProb');
+        diffProb.innerText = (data.prob_change >= 0 ? '↑' : '↓') + Math.abs(data.prob_change) + '%';
+        diffProb.className = 'diff-badge ' + (data.prob_change >= 0 ? 'plus' : 'minus');
+
+        document.getElementById('resRisk').innerText = data.new_risk_score;
+        const diffRisk = document.getElementById('diffRisk');
+        diffRisk.innerText = (data.risk_score_change <= 0 ? '↓' : '↑') + Math.abs(data.new_risk_score - data.old_risk_score).toFixed(1);
+        diffRisk.className = 'diff-badge ' + (data.new_risk_score <= data.old_risk_score ? 'plus' : 'minus');
+
+        const paEl = document.getElementById('resPA');
+        paEl.innerText = data.new_pa;
+        paEl.className = 'pa-tag-large pa-' + data.new_pa.toLowerCase();
+        
+        const paAlert = document.getElementById('paAlert');
+        if (data.pa_changed) paAlert.classList.remove('hidden');
+        else paAlert.classList.add('hidden');
+
+        renderImpactChart(data.impact_comparison);
+
+    } catch (e) {
+        console.error(e);
+        alert('Có lỗi xảy ra khi chạy mô phỏng.');
+    } finally {
+        overlay.classList.add('hidden');
+    }
+}
+
+function renderImpactChart(impactData) {
+    const trace = {
+        x: impactData.map(d => d.impact),
+        y: impactData.map(d => d.feature),
+        type: 'bar',
+        orientation: 'h',
+        marker: {
+            color: impactData.map(d => d.impact > 15 ? '#fca5a5' : '#818cf8'),
+            borderWidth: 0
+        }
+    };
+    
+    const layout = {
+        paper_bgcolor: 'transparent',
+        plot_bgcolor: 'transparent',
+        margin: { l: 150, r: 20, t: 10, b: 40 },
+        xaxis: { gridcolor: 'rgba(255,255,255,0.05)', tickfont: { color: '#94a3b8' } },
+        yaxis: { tickfont: { color: '#cbd5e1' } },
+        showlegend: false,
+        height: 300
+    };
+
+    Plotly.newPlot('simChart', [trace], layout, { displayModeBar: false });
+}
+
+// Initial draw
+window.onload = () => {
+    renderImpactChart({{ original_data.feedback.criteria_scores|items|map(attribute=0)|list|tojson }} .map((f, i) => {
+        return { feature: f, impact: 0 }; // Just placeholder
+    }));
+};
+</script>
+{% endblock %}

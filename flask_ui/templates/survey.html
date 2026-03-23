@@ -72,7 +72,7 @@
 
     <div id="dynamic-features-container">
       {% for cls, groups in class_grouping.items() %}
-      <div class="class-feature-group" data-class="{{ cls }}" style="display: {{ 'block' if cls == selected_class else 'none' }}; opacity: {{ '1' if cls == selected_class else '0' }}; transition: opacity 0.3s ease;">
+      <div class="class-feature-group feature-group {% if cls == selected_class %}active{% endif %}" data-class="{{ cls }}">
         
         <!-- Quan trọng Cao -->
         <h3 style="margin-top: 40px; margin-bottom: 20px; font-size: 20px; color: var(--danger); border-bottom: 2px solid var(--border-color); padding-bottom: 8px; display:flex; align-items:center; gap:8px;">
@@ -92,7 +92,7 @@
             {% else %}
             <div style="display: flex; align-items: center; gap: 16px; margin-top: 12px;">
               <input type="range" name="{{ feature }}" min="0" max="5" value="3" oninput="this.nextElementSibling.value = this.value" />
-              <output style="background: rgba(239, 68, 68, 0.1); color: #b91c1c; padding: 4px 14px; border-radius: 8px; font-weight: 600;">3</output>
+              <output class="badge badge-sat">{{ '3' }}</output>
             </div>
             {% endif %}
           </label>
@@ -238,17 +238,17 @@
   </h3>
   <div class="grid-2" style="margin-bottom: 18px; gap: 12px;">
     <article style="padding: 14px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: #f8fafc;">
-      <strong>Customer Satisfaction Level</strong>
+      <strong>Mức độ hài lòng</strong>
       <p style="margin-top: 8px; color: var(--text-secondary); font-size: 18px; font-weight: 700; text-transform: uppercase;">
-        {{ result.satisfaction_level }}
+        {{ 'HÀI LÒNG' if result.satisfaction_level == 'satisfied' else 'KHÔNG HÀI LÒNG' }}
       </p>
     </article>
     <article style="padding: 14px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: #f8fafc;">
-      <strong>Satisfaction Score</strong>
+      <strong>Điểm số hài lòng</strong>
       <p style="margin-top: 8px; color: var(--text-secondary); font-size: 18px; font-weight: 700;">
         {{ '%.2f'|format(result.satisfaction_score) }}
       </p>
-      <small style="color: var(--text-muted);">Logic: score >= 0.7 -> satisfied, score < 0.7 -> unsatisfied</small>
+      <small style="color: var(--text-muted);">Logic: điểm >= 0.6 -> hài lòng, điểm < 0.6 -> không hài lòng</small>
     </article>
   </div>
 

@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>{{ title or 'Airline Feedback DSS' }}</title>
+  <title>{{ title or 'Hệ thống DSS Đánh giá Hàng không' }}</title>
   
   <!-- Fonts & Icons -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 
   <!-- DataTables CSS -->
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" />
@@ -25,7 +25,7 @@
       </div>
       <div>
         <h1>Airline DSS</h1>
-        <p>Passenger Feedback</p>
+        <p>Phản hồi hành khách</p>
       </div>
     </div>
 
@@ -55,9 +55,17 @@
         <span class="material-symbols-rounded">analytics</span>
         Thống kê Model (AI)
       </a>
+      <a href="{{ url_for('admin_monthly_report') }}" class="{% if request.path == '/admin/monthly-report' %}active{% endif %}">
+        <span class="material-symbols-rounded">calendar_month</span>
+        Báo cáo tháng
+      </a>
+      <a href="{{ url_for('admin_class_comparison') }}" class="{% if request.path == '/admin/class-comparison' %}active{% endif %}">
+        <span class="material-symbols-rounded">compare_arrows</span>
+        So sánh hạng ghế
+      </a>
       <a href="{{ url_for('admin_decision_support') }}" class="{% if request.path == '/admin/decision-support' %}active{% endif %}">
         <span class="material-symbols-rounded">psychology</span>
-        Decision Support Strategy
+        Chiến lược hỗ trợ quyết định
       </a>
       {% endif %}
       <a href="{{ url_for('about') }}" class="{% if request.path == '/about' %}active{% endif %}">
@@ -108,7 +116,8 @@
           url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/vi.json'
         },
         pageLength: 5,
-        lengthMenu: [5, 10, 25, 50]
+        lengthMenu: [5, 10, 25, 50],
+        order: [[1, 'desc']]
       });
     });
   </script>
